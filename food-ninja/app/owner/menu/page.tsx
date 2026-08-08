@@ -49,7 +49,7 @@ export default function OwnerMenuPage() {
                     <td className="px-4 py-3 text-white">{item.name}</td>
                     <td className="px-4 py-3 text-slate-300">{item.category}</td>
                     <td className="px-4 py-3">
-                      <input defaultValue={item.price.replace("$", "")} className="w-24 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none" />
+                      <input defaultValue={item.price.replace("৳", "")} className="w-24 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none" />
                     </td>
                     <td className="px-4 py-3">
                       <input defaultValue={item.inventory} className="w-24 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none" />

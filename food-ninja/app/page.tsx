@@ -1,99 +1,122 @@
 import Link from "next/link";
 import { landingRestaurants } from "@/lib/platform";
-import { Badge, Panel, SectionHeading, StatCard } from "@/components/ui";
+
+const heroImages = [
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80",
+];
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_32%),linear-gradient(180deg,#050816_0%,#02040b_100%)] px-4 py-6 text-slate-50">
+    <main className="min-h-screen bg-[#f6f1e8] px-4 py-6 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex items-center justify-between rounded-[28px] border border-white/10 bg-panel/70 px-5 py-4 backdrop-blur">
+        <header className="flex items-center justify-between rounded-[28px] border border-black/5 bg-white/85 px-5 py-4 shadow-sm backdrop-blur">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-orange-300/80">Food Ninja</p>
-            <p className="text-sm text-slate-400">Multi-role delivery UX for customers, restaurants, riders, and admins.</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-amber-700">Food Ninja</p>
+            <p className="text-sm text-slate-500">Fast delivery, simple ordering, and live tracking.</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/login" prefetch={false} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10">
+            <Link href="/login" prefetch={false} className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
               Login
             </Link>
-            <Link href="/register" prefetch={false} className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-orange-500">
+            <Link href="/register" prefetch={false} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-600">
               Create account
             </Link>
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1.25fr_.75fr]">
-          <Panel className="relative overflow-hidden p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(249,115,22,0.16),_transparent_38%)]" />
-            <div className="relative space-y-6">
-              <Badge tone="primary">High contrast, real-time first</Badge>
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
+          <div className="rounded-[36px] border border-black/5 bg-white p-8 shadow-sm md:p-12">
+            <div className="space-y-5">
+              <span className="inline-flex rounded-full bg-amber-100 px-4 py-2 text-sm font-medium text-amber-800">Fastest Delivery, All over Dhaka City!</span>
               <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-                  Fast food delivery UI built for every role in the platform.
+                <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-6xl">
+                  Food that feels close to home.
                 </h1>
-                <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                  Food Ninja is designed as a mobile-first customer experience and a dense operational workspace for owners, riders, and administrators.
+                <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                  Browse restaurants, place an order, and track it live — with a cleaner, more familiar food app feel.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/home" prefetch={false} className="rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-orange-500">
-                  Explore restaurants
-                </Link>
-                <Link href="/orders/FD-2025" prefetch={false} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-slate-100 transition hover:bg-white/10">
-                  Track an order
-                </Link>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <label className="space-y-2">
+                  <span className="text-sm font-medium text-slate-700">Please type your address here</span>
+                  <input
+                    className="w-full rounded-2xl border border-black/10 bg-slate-50 px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400"
+                    placeholder="House, road, area, Dhaka"
+                  />
+                </label>
+                <button className="mt-auto rounded-2xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800">
+                  Find food
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-3 text-sm text-slate-600">
+                <span className="rounded-full bg-slate-100 px-4 py-2">30 min average delivery</span>
+                <span className="rounded-full bg-slate-100 px-4 py-2">Live rider tracking</span>
+                <span className="rounded-full bg-slate-100 px-4 py-2">Cashless and Taka</span>
               </div>
             </div>
-          </Panel>
+          </div>
 
-          <div className="space-y-4">
-            <StatCard label="Average delivery time" value="24 min" delta="-12%" tone="success" />
-            <StatCard label="Active restaurants" value="480+" delta="+38" />
-            <StatCard label="Realtime riders online" value="1.2k" delta="+8%" tone="success" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className="min-h-72 overflow-hidden rounded-[30px] bg-cover bg-center shadow-sm sm:row-span-2"
+              style={{ backgroundImage: `linear-gradient(rgba(16,24,40,0.22), rgba(16,24,40,0.45)), url('${heroImages[0]}')` }}
+            >
+              <div className="flex h-full items-end p-5">
+                <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm text-slate-900 shadow">
+                  Fresh, local, and ready to go
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="min-h-44 overflow-hidden rounded-[30px] bg-cover bg-center shadow-sm"
+              style={{ backgroundImage: `linear-gradient(rgba(16,24,40,0.18), rgba(16,24,40,0.5)), url('${heroImages[1]}')` }}
+            />
+            <div
+              className="min-h-44 overflow-hidden rounded-[30px] bg-cover bg-center shadow-sm"
+              style={{ backgroundImage: `linear-gradient(rgba(16,24,40,0.18), rgba(16,24,40,0.5)), url('${heroImages[2]}')` }}
+            />
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <Panel>
-            <p className="text-sm uppercase tracking-[0.25em] text-orange-300/80">Customer</p>
-            <p className="mt-3 text-xl font-semibold text-white">Browse, order, and track without friction.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Hero search, category scroll, restaurant cards, checkout modal, and live order tracking.</p>
-          </Panel>
-          <Panel>
-            <p className="text-sm uppercase tracking-[0.25em] text-orange-300/80">Operations</p>
-            <p className="mt-3 text-xl font-semibold text-white">Owner, rider, and admin workspaces.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Kanban orders, editable menus, routing maps, dense tables, and transaction controls.</p>
-          </Panel>
-          <Panel>
-            <p className="text-sm uppercase tracking-[0.25em] text-orange-300/80">Backend ready</p>
-            <p className="mt-3 text-xl font-semibold text-white">Button actions are contract-first placeholders.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Swap <code className="rounded bg-white/5 px-1.5 py-0.5">NEXT_PUBLIC_API_BASE_URL</code> in when the backend team ships endpoints.</p>
-          </Panel>
-        </section>
-
         <section className="space-y-4">
-          <SectionHeading
-            eyebrow="Top restaurants"
-            title="A minimal feed with strong contrast"
-            description="The landing page should showcase trust, speed, and the kind of ordering experience users expect from modern delivery platforms."
-          />
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-700">Popular restaurants</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Quick picks people keep ordering</h2>
+            </div>
+            <Link href="/home" prefetch={false} className="text-sm font-medium text-amber-700">
+              Browse all →
+            </Link>
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-3">
-            {landingRestaurants.map((restaurant) => (
-              <Panel key={restaurant.name} className="overflow-hidden p-0">
-                <div className={`h-28 bg-gradient-to-br ${restaurant.accent}`} />
+            {landingRestaurants.map((restaurant, index) => (
+              <article key={restaurant.name} className="overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-sm">
+                <div
+                  className="h-40 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(15,23,32,0.1), rgba(15,23,32,0.45)), url('${heroImages[index % heroImages.length]}')`,
+                  }}
+                />
                 <div className="space-y-3 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xl font-semibold text-white">{restaurant.name}</p>
-                      <p className="text-sm text-slate-400">{restaurant.cuisine}</p>
+                      <p className="text-lg font-semibold text-slate-900">{restaurant.name}</p>
+                      <p className="text-sm text-slate-500">{restaurant.cuisine}</p>
                     </div>
-                    <Badge tone="success">{restaurant.rating} ★</Badge>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">{restaurant.rating} ★</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-slate-300">
+                  <div className="flex items-center justify-between text-sm text-slate-600">
                     <span>{restaurant.eta}</span>
                     <span>{restaurant.cuisine}</span>
                   </div>
                 </div>
-              </Panel>
+              </article>
             ))}
           </div>
         </section>

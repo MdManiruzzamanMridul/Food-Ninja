@@ -5,9 +5,9 @@ import { ownerNav, ownerOrders } from "@/lib/platform";
 
 export default function OwnerOrdersPage() {
   const transactions = [
-    { id: "TX-9001", type: "Card", amount: "$28", status: "Captured" },
-    { id: "TX-9002", type: "Wallet", amount: "$16", status: "Pending" },
-    { id: "TX-9003", type: "Cash", amount: "$22", status: "Settled" },
+    { id: "TX-9001", type: "Card", amount: "৳28", status: "Captured" },
+    { id: "TX-9002", type: "Wallet", amount: "৳16", status: "Pending" },
+    { id: "TX-9003", type: "Cash", amount: "৳22", status: "Settled" },
   ];
 
   return (
@@ -22,7 +22,7 @@ export default function OwnerOrdersPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Panel><p className="text-sm text-slate-400">Completed orders</p><p className="mt-2 text-3xl font-semibold text-white">1,284</p></Panel>
           <Panel><p className="text-sm text-slate-400">Refunds</p><p className="mt-2 text-3xl font-semibold text-white">12</p></Panel>
-          <Panel><p className="text-sm text-slate-400">Net sales</p><p className="mt-2 text-3xl font-semibold text-white">$8,940</p></Panel>
+          <Panel><p className="text-sm text-slate-400">Net sales</p><p className="mt-2 text-3xl font-semibold text-white">৳8,940</p></Panel>
         </div>
 
         <Panel className="space-y-4 p-6">

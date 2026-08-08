@@ -35,10 +35,10 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_35%),linear-gradient(180deg,#050816_0%,#02040b_100%)] text-slate-50">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#0f1720_0%,#111a26_100%)] text-slate-50">
       <div className="min-h-screen px-4 py-4 md:px-6 lg:px-8">
         <div className="space-y-6">
-          <header className="w-full rounded-[28px] border-2 border-white/10 bg-panel/70 px-4 py-3 backdrop-blur">
+          <header className="w-full rounded-[24px] border border-white/10 bg-panel/72 px-4 py-3 backdrop-blur">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
               <div className="flex items-center gap-2">
                 <button
@@ -58,13 +58,13 @@ export function AppShell({
               </div>
 
               <Link href="/" className="justify-self-center text-center">
-                <p className="text-sm uppercase tracking-[0.38em] text-orange-300/80">Food Ninja</p>
+                <p className="text-sm uppercase tracking-[0.22em] text-amber-200/75">Food Ninja</p>
               </Link>
 
               <div className="flex items-center justify-end gap-3">{actions}</div>
             </div>
 
-            <nav className="mt-3 flex items-center gap-2 overflow-x-auto border-t-2 border-white/10 pt-3">
+            <nav className="mt-3 flex items-center gap-2 overflow-x-auto border-t border-white/10 pt-3">
               {nav.map((item) => {
                 const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
 
@@ -90,18 +90,18 @@ export function AppShell({
           <div className="flex gap-6">
             <aside
               className={cn(
-                "fixed inset-y-0 left-0 z-40 w-80 transform border-r-2 border-white/10 bg-slate-950/95 p-4 backdrop-blur-xl transition md:static md:translate-x-0 md:rounded-[28px] md:border-2",
+                "fixed inset-y-0 left-0 z-40 w-80 transform border-r border-white/10 bg-slate-950/90 p-4 backdrop-blur-xl transition md:static md:translate-x-0 md:rounded-[24px] md:border",
                 open ? "translate-x-0" : "-translate-x-full md:translate-x-0",
               )}
             >
               <div className="flex h-full flex-col gap-4">
-                <Panel className="bg-panel-muted/80 p-4">
+                <Panel className="bg-panel-muted/78 p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.32em] text-orange-300/80">{role}</p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-amber-200/75">{role}</p>
                       <h1 className="mt-1 text-2xl font-semibold text-white">{title}</h1>
                     </div>
-                    <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-200">
+                    <span className="rounded-full border border-emerald-400/15 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-100">
                       Live
                     </span>
                   </div>
@@ -114,7 +114,7 @@ export function AppShell({
                       key={item.href}
                       href={item.href}
                       prefetch={false}
-                      className="rounded-2xl border-2 border-white/5 bg-white/5 px-4 py-3 transition hover:border-orange-400/25 hover:bg-orange-500/10"
+                      className="rounded-2xl border border-white/5 bg-white/5 px-4 py-3 transition hover:border-amber-300/20 hover:bg-white/8"
                       onClick={() => setOpen(false)}
                     >
                       <div className="flex items-center justify-between gap-3">

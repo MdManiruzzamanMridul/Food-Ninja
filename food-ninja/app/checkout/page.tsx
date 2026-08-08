@@ -22,9 +22,9 @@ export default function CheckoutPage() {
         <Panel className="space-y-5 p-6">
           <SectionHeading eyebrow="Cart review" title="Verify the order before payment" />
           <div className="space-y-3 text-sm text-slate-300">
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Chicken Bowl x1</span><span>$14</span></div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Lemonade x1</span><span>$4</span></div>
-            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Delivery fee</span><span>$2</span></div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Chicken Bowl x1</span><span>৳14</span></div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Lemonade x1</span><span>৳4</span></div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4"><span>Delivery fee</span><span>৳2</span></div>
           </div>
           <ActionButton endpoint="/checkout/calculate" label="Recalculate totals" tone="secondary" />
         </Panel>

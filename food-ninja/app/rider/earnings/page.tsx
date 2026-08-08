@@ -5,10 +5,10 @@ import { riderNav } from "@/lib/platform";
 
 export default function RiderEarningsPage() {
   const earnings = [
-    { date: "Mon", trips: 8, amount: "$42" },
-    { date: "Tue", trips: 11, amount: "$59" },
-    { date: "Wed", trips: 10, amount: "$51" },
-    { date: "Thu", trips: 12, amount: "$64" },
+    { date: "Mon", trips: 8, amount: "৳42" },
+    { date: "Tue", trips: 11, amount: "৳59" },
+    { date: "Wed", trips: 10, amount: "৳51" },
+    { date: "Thu", trips: 12, amount: "৳64" },
   ];
 
   return (
@@ -17,13 +17,13 @@ export default function RiderEarningsPage() {
       title="Earnings"
       subtitle="Payment history, total balances, and completed trips."
       nav={riderNav}
-      actions={<Badge tone="success">Balance $1,284</Badge>}
+      actions={<Badge tone="success">Balance ৳1,284</Badge>}
     >
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
           <StatCard label="Completed trips" value="428" delta="+14" tone="success" />
-          <StatCard label="Pending payout" value="$184" delta="Tomorrow" tone="warning" />
-          <StatCard label="Total balance" value="$1,284" delta="+9%" />
+          <StatCard label="Pending payout" value="৳184" delta="Tomorrow" tone="warning" />
+          <StatCard label="Total balance" value="৳1,284" delta="+9%" />
         </div>
 
         <Panel className="space-y-4 p-6">

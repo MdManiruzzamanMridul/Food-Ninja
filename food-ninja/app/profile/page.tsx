@@ -5,9 +5,9 @@ import { customerNav } from "@/lib/platform";
 
 export default function CustomerProfilePage() {
   const orders = [
-    ["FD-2012", "Delivered", "$24", "Yesterday"],
-    ["FD-2013", "Canceled", "$18", "3 days ago"],
-    ["FD-2014", "Delivered", "$31", "1 week ago"],
+    ["FD-2012", "Delivered", "৳24", "Yesterday"],
+    ["FD-2013", "Canceled", "৳18", "3 days ago"],
+    ["FD-2014", "Delivered", "৳31", "1 week ago"],
   ];
 
   return (

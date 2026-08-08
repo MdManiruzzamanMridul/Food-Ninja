@@ -12,7 +12,7 @@ export default function CustomerHomePage() {
       subtitle="Mobile-first feed with search, categories, restaurant cards, and a persistent cart entry point."
       nav={customerNav}
       actions={
-        <Link href="/checkout" className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-orange-500">
+      <Link href="/checkout" className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90">
           Cart 2 • Checkout
         </Link>
       }
@@ -42,7 +42,7 @@ export default function CustomerHomePage() {
               <button
                 key={category}
                 type="button"
-                className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition ${index === 0 ? "border-orange-400/30 bg-orange-500/15 text-orange-100" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"}`}
+                className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition ${index === 0 ? "border-amber-300/20 bg-amber-500/10 text-amber-100" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8"}`}
               >
                 {category}
               </button>
@@ -71,7 +71,7 @@ export default function CustomerHomePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <Badge tone={restaurant.status === "Open now" ? "success" : "primary"}>{restaurant.status}</Badge>
-                  <Link href={`/restaurant/${restaurant.id}`} className="text-sm font-medium text-orange-300">
+                  <Link href={`/restaurant/${restaurant.id}`} className="text-sm font-medium text-amber-700">
                     View menu →
                   </Link>
                 </div>
@@ -80,12 +80,12 @@ export default function CustomerHomePage() {
           </div>
         </section>
 
-        <Panel className="flex flex-col items-start justify-between gap-4 border-orange-400/20 bg-orange-500/10 p-6 lg:flex-row lg:items-center">
+        <Panel className="flex flex-col items-start justify-between gap-4 border-amber-300/20 bg-amber-500/10 p-6 lg:flex-row lg:items-center">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-orange-200/80">Persistent cart</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-amber-700">Persistent cart</p>
             <p className="mt-2 text-xl font-semibold text-white">Floating checkout remains visible while browsing.</p>
           </div>
-          <Link href="/checkout" className="rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:bg-orange-500">
+          <Link href="/checkout" className="rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90">
             Open cart
           </Link>
         </Panel>

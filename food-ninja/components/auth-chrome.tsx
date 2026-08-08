@@ -25,7 +25,7 @@ export function AuthChrome({
   }
 
   return (
-    <div className="w-full rounded-[28px] border-2 border-white/10 bg-panel/70 px-4 py-3 backdrop-blur">
+    <div className="w-full rounded-[24px] border border-white/10 bg-panel/72 px-4 py-3 backdrop-blur">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -38,7 +38,7 @@ export function AuthChrome({
         </div>
 
         <Link href="/" className="justify-self-center text-center">
-          <p className="text-sm uppercase tracking-[0.38em] text-orange-300/80">Food Ninja</p>
+          <p className="text-sm uppercase tracking-[0.22em] text-amber-200/75">Food Ninja</p>
         </Link>
 
         <div className="flex flex-wrap items-center justify-end gap-2 lg:max-w-[55%]">
@@ -53,8 +53,8 @@ export function AuthChrome({
                 className={cn(
                   "whitespace-nowrap rounded-full border px-4 py-2 text-sm transition",
                   active
-                    ? "border-orange-400/30 bg-orange-500/15 text-orange-100"
-                    : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white",
+                    ? "border-amber-300/20 bg-amber-500/10 text-amber-100"
+                    : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/8 hover:text-white",
                 )}
               >
                 {item.label}

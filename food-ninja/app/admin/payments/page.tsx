@@ -10,7 +10,7 @@ export default function AdminPaymentsPage() {
       title="Payments"
       subtitle="Transaction logs, platform fee collection, and payout management."
       nav={adminNav}
-      actions={<Badge tone="success">Fee collected $2,486</Badge>}
+      actions={<Badge tone="success">Fee collected ৳2,486</Badge>}
     >
       <div className="grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
         <Panel className="space-y-4 p-6">

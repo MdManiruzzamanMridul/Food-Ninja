@@ -50,7 +50,7 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
                       <p className="text-sm text-slate-400">Fresh ingredients • high margin</p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-300">$12.00</span>
+                      <span className="text-sm font-medium text-slate-300">৳12.00</span>
                       <ActionButton endpoint="/cart/items" label="Add" tone="secondary" />
                     </div>
                   </Panel>
@@ -64,12 +64,12 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
           <Panel className="space-y-4 p-6">
             <SectionHeading eyebrow="Cart summary" title="Small, focused checkout card" />
             <div className="space-y-3 text-sm text-slate-300">
-              <div className="flex items-center justify-between"><span>Chicken Bowl x1</span><span>$14</span></div>
-              <div className="flex items-center justify-between"><span>Fries x1</span><span>$5</span></div>
-              <div className="flex items-center justify-between"><span>Delivery</span><span>$2</span></div>
+              <div className="flex items-center justify-between"><span>Chicken Bowl x1</span><span>৳14</span></div>
+              <div className="flex items-center justify-between"><span>Fries x1</span><span>৳5</span></div>
+              <div className="flex items-center justify-between"><span>Delivery</span><span>৳2</span></div>
               <div className="border-t border-white/10 pt-3 flex items-center justify-between text-white">
                 <span className="font-medium">Total</span>
-                <span className="text-xl font-semibold">$21</span>
+                <span className="text-xl font-semibold">৳21</span>
               </div>
             </div>
             <Link href="/checkout" className="mt-2 block rounded-full bg-primary px-4 py-3 text-center text-sm font-medium text-primary-foreground transition hover:bg-orange-500">

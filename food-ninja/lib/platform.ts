@@ -13,12 +13,12 @@ export const landingRestaurants = [
 export const customerCategories = ["Burgers", "Pizza", "Rice Bowls", "Desserts", "Coffee", "Healthy"];
 
 export const customerRestaurants = [
-  { id: "1", name: "Saffron House", cuisine: "Biryani", eta: "24 min", rating: "4.8", delivery: "Free delivery above $15", price: "$$", status: "Open now" },
-  { id: "2", name: "Metro Burger", cuisine: "Burgers", eta: "19 min", rating: "4.6", delivery: "Fastest in your area", price: "$", status: "Top rated" },
-  { id: "3", name: "Noodle Lane", cuisine: "Asian", eta: "21 min", rating: "4.9", delivery: "Live tracking enabled", price: "$$", status: "Popular" },
-  { id: "4", name: "Garden Bowl", cuisine: "Healthy", eta: "27 min", rating: "4.7", delivery: "Contactless delivery", price: "$$", status: "New" },
-  { id: "5", name: "Pizza Metro", cuisine: "Pizza", eta: "18 min", rating: "4.5", delivery: "Late night delivery", price: "$$", status: "Busy" },
-  { id: "6", name: "Sweet Room", cuisine: "Dessert", eta: "14 min", rating: "4.9", delivery: "Trending nearby", price: "$", status: "Editor's pick" },
+  { id: "1", name: "Saffron House", cuisine: "Biryani", eta: "24 min", rating: "4.8", delivery: "Free delivery above ৳1,500", price: "৳৳", status: "Open now" },
+  { id: "2", name: "Metro Burger", cuisine: "Burgers", eta: "19 min", rating: "4.6", delivery: "Fastest in your area", price: "৳", status: "Top rated" },
+  { id: "3", name: "Noodle Lane", cuisine: "Asian", eta: "21 min", rating: "4.9", delivery: "Live tracking enabled", price: "৳৳", status: "Popular" },
+  { id: "4", name: "Garden Bowl", cuisine: "Healthy", eta: "27 min", rating: "4.7", delivery: "Contactless delivery", price: "৳৳", status: "New" },
+  { id: "5", name: "Pizza Metro", cuisine: "Pizza", eta: "18 min", rating: "4.5", delivery: "Late night delivery", price: "৳৳", status: "Busy" },
+  { id: "6", name: "Sweet Room", cuisine: "Dessert", eta: "14 min", rating: "4.9", delivery: "Trending nearby", price: "৳", status: "Editor's pick" },
 ];
 
 export const orderTimeline = [
@@ -30,11 +30,11 @@ export const orderTimeline = [
 ];
 
 export const restaurantMenu = [
-  { name: "Signature Chicken Bowl", category: "Bowls", price: "$14", inventory: 24, status: "Active" },
-  { name: "Firecracker Wings", category: "Sides", price: "$11", inventory: 18, status: "Active" },
-  { name: "Citrus Lemonade", category: "Drinks", price: "$4", inventory: 42, status: "Low stock" },
-  { name: "Smash Burger", category: "Mains", price: "$13", inventory: 12, status: "Active" },
-  { name: "Chocolate Lava Cake", category: "Desserts", price: "$7", inventory: 8, status: "Featured" },
+  { name: "Signature Chicken Bowl", category: "Bowls", price: "৳14", inventory: 24, status: "Active" },
+  { name: "Firecracker Wings", category: "Sides", price: "৳11", inventory: 18, status: "Active" },
+  { name: "Citrus Lemonade", category: "Drinks", price: "৳4", inventory: 42, status: "Low stock" },
+  { name: "Smash Burger", category: "Mains", price: "৳13", inventory: 12, status: "Active" },
+  { name: "Chocolate Lava Cake", category: "Desserts", price: "৳7", inventory: 8, status: "Featured" },
 ];
 
 export const ownerOrders = [
@@ -44,9 +44,9 @@ export const ownerOrders = [
 ];
 
 export const ownerRevenue = [
-  { label: "Today", value: "$1,280", delta: "+12%" },
-  { label: "Week", value: "$8,940", delta: "+18%" },
-  { label: "Avg basket", value: "$23", delta: "+4%" },
+  { label: "Today", value: "৳1,280", delta: "+12%" },
+  { label: "Week", value: "৳8,940", delta: "+18%" },
+  { label: "Avg basket", value: "৳23", delta: "+4%" },
 ];
 
 export const riderDeliveries = [
@@ -59,7 +59,7 @@ export const adminMetrics = [
   { label: "Orders today", value: "12,430", delta: "+8.2%" },
   { label: "Active users", value: "4,118", delta: "+6.4%" },
   { label: "Online riders", value: "918", delta: "+3.1%" },
-  { label: "GMV", value: "$84k", delta: "+14%" },
+  { label: "GMV", value: "৳84k", delta: "+14%" },
 ];
 
 export const adminUsers = [
@@ -82,15 +82,15 @@ export const adminRiders = [
 ];
 
 export const adminOrders = [
-  { id: "FN-3001", customer: "Maya", restaurant: "Saffron House", rider: "Rahim", status: "Delivered", value: "$28" },
-  { id: "FN-3002", customer: "Khalid", restaurant: "Metro Burger", rider: "Tania", status: "In transit", value: "$16" },
-  { id: "FN-3003", customer: "Sofia", restaurant: "Green Fork", rider: "Imran", status: "Canceled", value: "$22" },
+  { id: "FN-3001", customer: "Maya", restaurant: "Saffron House", rider: "Rahim", status: "Delivered", value: "৳28" },
+  { id: "FN-3002", customer: "Khalid", restaurant: "Metro Burger", rider: "Tania", status: "In transit", value: "৳16" },
+  { id: "FN-3003", customer: "Sofia", restaurant: "Green Fork", rider: "Imran", status: "Canceled", value: "৳22" },
 ];
 
 export const adminPayments = [
-  { ref: "TX-421", type: "Card payment", amount: "$28.00", fee: "$2.10", status: "Captured" },
-  { ref: "TX-422", type: "Restaurant payout", amount: "$1,204.00", fee: "$32.00", status: "Scheduled" },
-  { ref: "TX-423", type: "Rider payout", amount: "$418.00", fee: "$0.00", status: "Completed" },
+  { ref: "TX-421", type: "Card payment", amount: "৳28.00", fee: "৳2.10", status: "Captured" },
+  { ref: "TX-422", type: "Restaurant payout", amount: "৳1,204.00", fee: "৳32.00", status: "Scheduled" },
+  { ref: "TX-423", type: "Rider payout", amount: "৳418.00", fee: "৳0.00", status: "Completed" },
 ];
 
 export const ownerNav: NavItem[] = [
