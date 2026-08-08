@@ -27,7 +27,7 @@ export function StatusToggle({
       const next = !isOn;
       await submitPlatformRequest(endpoint, { status: next ? onLabel : offLabel });
       setIsOn(next);
-      toast(`Availability set to ${next ? onLabel : offLabel}`, "success");
+      toast(`Availability updated locally: ${next ? onLabel : offLabel}`, "success");
     } catch (error) {
       toast(error instanceof Error ? error.message : "Status update failed", "danger");
     } finally {

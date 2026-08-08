@@ -26,7 +26,7 @@ export function ActionButton({
 
     try {
       await submitPlatformRequest(endpoint, payload);
-      toast(`${label} request queued`, "success");
+      toast(`${label} submitted locally`, "success");
     } catch (error) {
       toast(error instanceof Error ? error.message : "Request failed", "danger");
     } finally {

@@ -14,7 +14,7 @@ export function Panel({
   return (
     <div
       className={cn(
-        "rounded-3xl border border-white/10 bg-panel/90 p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,0.75)] backdrop-blur",
+        "rounded-3xl border-2 border-white/10 bg-panel/90 p-5 shadow-[0_20px_80px_-30px_rgba(0,0,0,0.75)] backdrop-blur",
         className,
       )}
     >
@@ -98,7 +98,7 @@ export function TableFrame({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-3xl border border-white/10 bg-panel/85", className)}>
+    <div className={cn("overflow-hidden rounded-3xl border-2 border-white/10 bg-panel/85", className)}>
       {children}
     </div>
   );
