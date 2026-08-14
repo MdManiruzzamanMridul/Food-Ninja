@@ -2,6 +2,24 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+## Neon database setup
+
+1. Run `npx neonctl@latest init` from this folder in your own terminal and complete the Neon sign-in and project-selection prompts.
+2. Copy `.env.example` to `.env.local`.
+3. Paste the unmasked Neon connection string into `DATABASE_URL` in `.env.local`.
+
+`.env.local` is intentionally ignored by Git, so the database password stays private.
+
+### Import 100 Dhaka restaurants
+
+The project includes a repeatable importer for the public [Dhaka Restaurant Directory](https://github.com/abusalehmnasim/dhaka-restaurant-directory), which is compiled from OpenStreetMap data. After cloning that repository, run:
+
+```bash
+npm run db:import-dhaka -- path/to/dhaka_restaurants.csv
+```
+
+The importer creates the `dhaka_restaurants` table and upserts 100 usable records. The schema is stored in `db/schema.sql`.
+
 First, run the development server:
 
 ```bash

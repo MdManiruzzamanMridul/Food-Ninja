@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { landingRestaurants } from "@/lib/platform";
+import { getRestaurantCards } from "@/lib/restaurants";
+
+export const dynamic = "force-dynamic";
 
 const heroImages = [
   "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80",
@@ -7,7 +10,27 @@ const heroImages = [
   "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80",
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const neonRestaurants = await getRestaurantCards(3);
+  const isLive = neonRestaurants.length > 0;
+  const restaurants = isLive
+    ? neonRestaurants.map((restaurant) => ({
+        id: restaurant.id,
+        name: restaurant.name,
+        cuisine: restaurant.cuisine,
+        location: `${restaurant.area} • Dhaka`,
+        rating: restaurant.rating,
+        mapsUrl: restaurant.mapsUrl,
+      }))
+    : landingRestaurants.map((restaurant, idx) => ({
+        id: String(idx + 1),
+        name: restaurant.name,
+        cuisine: restaurant.cuisine,
+        location: restaurant.eta,
+        rating: restaurant.rating,
+        mapsUrl: null,
+      }));
+
   return (
     <main className="min-h-screen bg-[#f6f1e8] px-4 py-6 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -39,18 +62,19 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <form action="/home" method="GET" className="grid gap-3 sm:grid-cols-[1fr_auto]">
                 <label className="space-y-2">
                   <span className="text-sm font-medium text-slate-700">Please type your address here</span>
                   <input
+                    name="address"
                     className="w-full rounded-2xl border border-black/10 bg-slate-50 px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400"
                     placeholder="House, road, area, Dhaka"
                   />
                 </label>
-                <button className="mt-auto rounded-2xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800">
+                <button type="submit" className="mt-auto rounded-2xl bg-slate-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-slate-800">
                   Find food
                 </button>
-              </div>
+              </form>
 
               <div className="flex flex-wrap gap-3 text-sm text-slate-600">
                 <span className="rounded-full bg-slate-100 px-4 py-2">30 min average delivery</span>
@@ -86,17 +110,21 @@ export default function LandingPage() {
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-700">Popular restaurants</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Quick picks people keep ordering</h2>
+              <p className="text-sm font-medium uppercase tracking-[0.22em] text-amber-700">
+                {isLive ? "Live from Neon" : "Popular restaurants"}
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                {isLive ? "Top Dhaka restaurants" : "Quick picks people keep ordering"}
+              </h2>
             </div>
-            <Link href="/home" prefetch={false} className="text-sm font-medium text-amber-700">
-              Browse all →
+            <Link href="/home" prefetch={false} className="text-sm font-medium text-amber-700 hover:underline">
+              Browse all {isLive ? "(100+)" : ""} →
             </Link>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            {landingRestaurants.map((restaurant, index) => (
-              <article key={restaurant.name} className="overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-sm">
+            {restaurants.map((restaurant, index) => (
+              <article key={restaurant.name} className="overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-sm transition hover:shadow-md">
                 <div
                   className="h-40 bg-cover bg-center"
                   style={{
@@ -109,11 +137,26 @@ export default function LandingPage() {
                       <p className="text-lg font-semibold text-slate-900">{restaurant.name}</p>
                       <p className="text-sm text-slate-500">{restaurant.cuisine}</p>
                     </div>
-                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">{restaurant.rating} ★</span>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+                      {restaurant.rating === "New" ? "New" : `${restaurant.rating} ★`}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-slate-600">
-                    <span>{restaurant.eta}</span>
-                    <span>{restaurant.cuisine}</span>
+                    <span>{restaurant.location}</span>
+                    {restaurant.mapsUrl ? (
+                      <a
+                        href={restaurant.mapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-medium text-amber-700 hover:underline"
+                      >
+                        View map →
+                      </a>
+                    ) : (
+                      <Link href="/home" className="text-xs font-medium text-amber-700 hover:underline">
+                        Order now →
+                      </Link>
+                    )}
                   </div>
                 </div>
               </article>

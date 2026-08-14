@@ -3,8 +3,22 @@ import { AppShell } from "@/components/app-shell";
 import { ActionButton } from "@/components/action-button";
 import { Badge, Panel, SectionHeading } from "@/components/ui";
 import { customerCategories, customerNav, customerRestaurants } from "@/lib/platform";
+import { getRestaurantCards } from "@/lib/restaurants";
 
-export default function CustomerHomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function CustomerHomePage() {
+  const neonRestaurants = await getRestaurantCards();
+  const fallbackRestaurants = customerRestaurants.map((restaurant) => ({ ...restaurant, mapsUrl: null }));
+  const restaurants = neonRestaurants.length > 0
+    ? neonRestaurants.map((restaurant) => ({
+        ...restaurant,
+        eta: "Delivery details soon",
+        delivery: `${restaurant.area} • View location and menu`,
+        price: "Dhaka",
+        status: "Open directory listing",
+      }))
+    : fallbackRestaurants;
   return (
     <AppShell
       role="Customer portal"
@@ -51,16 +65,20 @@ export default function CustomerHomePage() {
         </section>
 
         <section className="space-y-4">
-          <SectionHeading eyebrow="Restaurants" title="High contrast restaurant cards" description="Ratings, delivery windows, and status badges are surfaced directly for fast decisions." />
+          <SectionHeading
+            eyebrow={neonRestaurants.length > 0 ? "Live from Neon" : "Restaurants"}
+            title="Restaurants near you"
+            description={neonRestaurants.length > 0 ? "Real directory records from your Neon database." : "Showing sample restaurants while the database is unavailable."}
+          />
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {customerRestaurants.map((restaurant) => (
+            {restaurants.map((restaurant) => (
               <Panel key={restaurant.id} className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xl font-semibold text-white">{restaurant.name}</p>
                     <p className="text-sm text-slate-400">{restaurant.cuisine}</p>
                   </div>
-                  <Badge tone="success">{restaurant.rating} ★</Badge>
+                  <Badge tone="success">{restaurant.rating === "New" ? "New" : `${restaurant.rating} ★`}</Badge>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
                   <p>{restaurant.delivery}</p>
@@ -71,9 +89,15 @@ export default function CustomerHomePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <Badge tone={restaurant.status === "Open now" ? "success" : "primary"}>{restaurant.status}</Badge>
-                  <Link href={`/restaurant/${restaurant.id}`} className="text-sm font-medium text-amber-700">
-                    View menu →
-                  </Link>
+                  {restaurant.mapsUrl ? (
+                    <a href={restaurant.mapsUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-amber-700">
+                      View map →
+                    </a>
+                  ) : (
+                    <Link href={`/restaurant/${restaurant.id}`} className="text-sm font-medium text-amber-700">
+                      View menu →
+                    </Link>
+                  )}
                 </div>
               </Panel>
             ))}
