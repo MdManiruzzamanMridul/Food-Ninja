@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-950 text-slate-50">
+      <body className="min-h-full bg-background text-foreground">
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

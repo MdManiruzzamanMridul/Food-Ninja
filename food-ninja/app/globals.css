@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f1720;
-  --foreground: #f7f7f5;
-  --panel: #182131;
-  --panel-muted: #1d2839;
-  --border: rgba(148, 163, 184, 0.14);
-  --primary: #d97706;
-  --primary-foreground: #fff7ed;
+  --background: #f6f1e8;
+  --foreground: #172033;
+  --panel: #ffffff;
+  --panel-muted: #fffaf2;
+  --border: rgba(15, 23, 42, 0.09);
+  --primary: #f59e0b;
+  --primary-foreground: #ffffff;
   --success: #16a34a;
   --warning: #c57a10;
   --danger: #dc2626;
@@ -34,7 +34,7 @@
 
 html {
   background: var(--background);
-  color-scheme: dark;
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 
@@ -46,7 +46,7 @@ body {
 }
 
 ::selection {
-  background: rgba(217, 119, 6, 0.22);
+  background: rgba(245, 158, 11, 0.26);
 }
 
 ::-webkit-scrollbar {
@@ -55,14 +55,52 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 32, 0.7);
+  background: #f6f1e8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.22);
+  background: rgba(100, 116, 139, 0.28);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(217, 119, 6, 0.35);
+  background: rgba(245, 158, 11, 0.55);
 }
+
+/* Shared light surface treatment for the role portals and authentication pages. */
+.light-app {
+  background: #f6f1e8;
+  color: #172033;
+}
+
+.light-app .text-white,
+.light-app .text-slate-50,
+.light-app .text-slate-100,
+.light-app .text-slate-200 {
+  color: #172033;
+}
+
+.light-app .text-slate-300 { color: #475569; }
+.light-app .text-slate-400 { color: #64748b; }
+.light-app .text-slate-500 { color: #94a3b8; }
+.light-app .text-amber-100,
+.light-app .text-amber-200,
+.light-app .text-orange-300 { color: #a16207; }
+.light-app .text-emerald-100,
+.light-app .text-emerald-200 { color: #047857; }
+.light-app .text-rose-100,
+.light-app .text-rose-200 { color: #be123c; }
+
+.light-app .border-white\/5,
+.light-app .border-white\/10 { border-color: rgba(15, 23, 42, 0.09); }
+.light-app .bg-white\/3,
+.light-app .bg-white\/5,
+.light-app .bg-white\/6,
+.light-app .bg-white\/8 { background-color: rgba(248, 250, 252, 0.85); }
+.light-app .bg-slate-950 { background-color: #f6f1e8; }
+.light-app .bg-panel { background-color: #ffffff; }
+.light-app .bg-panel-muted { background-color: #fffaf2; }
+.light-app input,
+.light-app textarea { color: #172033; }
+.light-app input::placeholder,
+.light-app textarea::placeholder { color: #94a3b8; }

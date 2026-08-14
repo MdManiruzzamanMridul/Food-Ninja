@@ -7,7 +7,7 @@ import { Panel, Badge } from "@/components/ui";
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-50">
+    <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <AuthChrome
           nav={[

@@ -12,7 +12,7 @@ export default function LoginPage() {
   const roles = ["Customer", "Partner", "Admin"];
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-50">
+    <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
       <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-6 lg:grid-cols-[.9fr_1.1fr]">
         <div className="lg:col-span-2">
           <AuthChrome
