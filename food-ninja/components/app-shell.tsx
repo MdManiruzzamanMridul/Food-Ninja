@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import type { NavItem } from "@/lib/platform";
 import { cn, Panel } from "./ui";
-
+//
 export function AppShell({
   role,
   title,
