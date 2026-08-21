@@ -1,5 +1,7 @@
 # Food Ninja
 
+yay
+
 A high-performance, full-stack food delivery platform built to handle real-time orders, multi-role user management, and seamless payments.
 
 ## Tech Stack
