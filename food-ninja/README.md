@@ -1,54 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Food Ninja Web App
 
-## Getting Started
+Full-stack Next.js 16 food delivery web application with PostgreSQL / Neon database integration and Tailwind CSS v4 styling.
 
-## Neon database setup
+---
 
-1. Run `npx neonctl@latest init` from this folder in your own terminal and complete the Neon sign-in and project-selection prompts.
-2. Copy `.env.example` to `.env.local`.
-3. Paste the unmasked Neon connection string into `DATABASE_URL` in `.env.local`.
+## 📦 Current Dependencies
 
-`.env.local` is intentionally ignored by Git, so the database password stays private.
+### Production (`package.json`)
+- **`next` (`16.3.0`)**: Next.js App Router framework
+- **`react` (`19.2.8`)**: React 19 UI library
+- **`react-dom` (`19.2.8`)**: React 19 DOM renderer
+- **`pg` (`^8.23.0`)**: Node.js PostgreSQL client
+- **`csv-parse` (`^7.0.2`)**: CSV parser for data ingestion scripts
 
-### Import 100 Dhaka restaurants
+### Development (`package.json`)
+- **`typescript` (`^5`)**: TypeScript language support
+- **`tailwindcss` (`^4`)**: Tailwind CSS v4
+- **`@tailwindcss/postcss` (`^4`)**: PostCSS plugin for Tailwind CSS v4
+- **`eslint` (`^9`)**: ESLint linter
+- **`eslint-config-next` (`16.3.0`)**: Next.js ESLint configuration
+- **`@types/node` (`^20`)**, **`@types/react` (`^19`)**, **`@types/react-dom` (`^19`)**, **`@types/pg` (`^8.21.0`)**: TypeScript type definitions
 
-The project includes a repeatable importer for the public [Dhaka Restaurant Directory](https://github.com/abusalehmnasim/dhaka-restaurant-directory), which is compiled from OpenStreetMap data. After cloning that repository, run:
+---
+
+## 🛠️ Getting Started
+
+### 1. Database Setup (Neon Serverless Postgres)
+
+1. Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Paste your unmasked Neon / PostgreSQL connection string into `DATABASE_URL` in `.env.local`:
+   ```env
+   DATABASE_URL="postgresql://user:password@ep-sample-123456.us-east-2.aws.neon.tech/food_ninja?sslmode=require"
+   ```
+
+*(Note: `.env.local` is gitignored so credentials remain secure).*
+
+### 2. Import Restaurant Data (Optional)
+
+The project includes an importer for the [Dhaka Restaurant Directory](https://github.com/abusalehmnasim/dhaka-restaurant-directory) CSV:
 
 ```bash
+# Import records into Neon database
 npm run db:import-dhaka -- path/to/dhaka_restaurants.csv
+
+# Verify records
+npm run db:verify-dhaka
 ```
 
-The importer creates the `dhaka_restaurants` table and upserts 100 usable records. The schema is stored in `db/schema.sql`.
-
-First, run the development server:
+### 3. Start Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📜 Available NPM Scripts
 
-## Learn More
+| Script | Command | Description |
+| :--- | :--- | :--- |
+| `npm run dev` | `next dev` | Starts local Next.js development server |
+| `npm run build` | `next build` | Builds application for production deployment |
+| `npm run start` | `next start` | Starts built production application server |
+| `npm run lint` | `eslint` | Runs ESLint across the project |
+| `npm run db:import-dhaka` | `node --env-file=.env.local scripts/import-dhaka-restaurants.mjs` | Imports CSV data into `dhaka_restaurants` table |
+| `npm run db:verify-dhaka` | `node --env-file=.env.local scripts/verify-dhaka-restaurants.mjs` | Verifies restaurant record count in database |
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

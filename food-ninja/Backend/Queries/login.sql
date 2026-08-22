@@ -1,5 +1,3 @@
---name: admin_check
-SELECT 1
-FROM admin 
-WHERE email = %s OR phone = %s 
-
+--name: insert_admin
+INSERT INTO admin (username, email, phone, password_hash)
+VALUES (%s, %s, %s, %s)

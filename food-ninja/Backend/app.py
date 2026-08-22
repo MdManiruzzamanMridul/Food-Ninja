@@ -25,48 +25,51 @@ def load_query(filename, query_name):
     raise ValueError(f"Query '{query_name}' not found")
 
 
-@app.route("/login", methods=["POST"])
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    return response
+
+
+@app.route("/login", methods=["POST", "OPTIONS"])
 def login():
+    if request.method == "OPTIONS":
+        return "", 200
 
     # Get JSON sent by the frontend
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
 
+    username = data.get("username")
     email = data.get("email")
+    phone = data.get("phone")
     password = data.get("password")
 
-    # Basic validation
-    if not email or not password:
+    # Basic validation for the 4 admin attributes
+    if not username or not email or not phone or not password:
         return jsonify({
             "success": False,
-            "message": "Email and password are required"
+            "message": "username, email, phone, and password are all required"
         }), 400
 
     # Load SQL from file
-    query = load_query("login.sql")
+    query = load_query("login.sql", "insert_admin")
 
-    # Get a connection from the pool
+    # Get a connection from the pool and insert the 4 attributes
     with get_connection() as conn:
-
         with conn.cursor() as cur:
+            cur.execute(query, (username, email, phone, password))
+            conn.commit()
 
-            # Execute SQL
-            cur.execute(query, (email,))
-
-            # Get first matching user
-            user = cur.fetchone()
-
-    # User doesn't exist
-    if user is None:
-        return jsonify({
-            "success": False,
-            "message": "Invalid email or password"
-        }), 401
-
-    # For now: dummy response
     return jsonify({
         "success": True,
-        "message": "Login successful",
-        "user_id": user[0]
+        "message": f"Admin '{username}' successfully saved to database!",
+        "data": {
+            "username": username,
+            "email": email,
+            "phone": phone
+        }
     }), 200
 
 
