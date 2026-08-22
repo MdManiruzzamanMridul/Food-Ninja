@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:import-dhaka": "node --env-file=.env.local scripts/import-dhaka-restaurants.mjs",
-    "db:verify-dhaka": "node --env-file=.env.local scripts/verify-dhaka-restaurants.mjs"
+    "db:verify-dhaka": "node --env-file=.env.local scripts/verify-dhaka-restaurants.mjs",
+    "db:generate-files": "node --env-file=.env.local scripts/generate-db-files.mjs"
   },
   "dependencies": {
     "csv-parse": "^7.0.2",
