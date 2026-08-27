@@ -1,6 +1,7 @@
 import os
 import jwt
 from datetime import datetime, timedelta, timezone
+from flask import request
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -42,3 +43,24 @@ def verify_token(token):
         return None
     except jwt.InvalidTokenError:
         return None
+
+def get_user_info():
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        return None
+    
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0] != "Bearer":
+        return None
+
+    token = parts[1]
+    payload = verify_token(token)
+
+    if(payload is None):
+        return None
+
+    if(not payload.get("username") or not payload.get("user_type")):
+        return None
+    
+    return payload

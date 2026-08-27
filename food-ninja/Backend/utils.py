@@ -1,7 +1,5 @@
-from flask import Blueprint, request, jsonify
 from db import get_connection, load_query
 import psycopg
-import auth
 import re
 
 
@@ -55,27 +53,6 @@ def normalize_username(username):
         return None
 
     return username
-
-def get_user_info():
-    auth_header = request.headers.get("Authorization")
-
-    if not auth_header:
-        return None
-    
-    parts = auth_header.split(" ")
-    if len(parts) != 2 or parts[0] != "Bearer":
-        return None
-
-    token = parts[1]
-    payload = auth.verify_token(token)
-
-    if(payload is None):
-        return None
-
-    if(not payload.get("username") or not payload.get("user_type")):
-        return None
-    
-    return payload
 
 
 def updateLocation(user_type, username, latitude, longitude):
