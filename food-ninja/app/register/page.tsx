@@ -2,75 +2,52 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
-import { Panel, Badge } from "@/components/ui";
-import { Modal } from "@/components/modal";
+import { Panel, Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
+import { apiRegister } from "@/lib/backend";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
+
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [address, setAddress] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successData, setSuccessData] = useState<{
-    message: string;
-    data?: { username: string; email: string; phone: string };
-  } | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!formData.username || !formData.email || !formData.phone || !formData.password) {
-      toast("Please provide all 4 required admin attributes (username, email, phone, password)", "warning");
+    const finalUsername = username.trim() || email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") || name.replace(/\s+/g, "").toLowerCase();
+
+    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !finalUsername) {
+      toast("Please fill in all required fields (Name, Username, Phone, Email, Password)", "warning");
       return;
     }
 
     setLoading(true);
-
     try {
-      const response = await fetch("http://localhost:5000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      await apiRegister({
+        name: name.trim(),
+        username: finalUsername,
+        email: email.trim(),
+        phone: phone.trim(),
+        password: password.trim(),
+        user_type: "user",
       });
 
-      const result = await response.json();
+      toast("Customer account created successfully! Redirecting to login...", "success");
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Failed to register admin in database");
-      }
-
-      toast(result.message || "Admin registered successfully!", "success");
-      setSuccessData({
-        message: result.message || "Admin record successfully written to database!",
-        data: result.data || {
-          username: formData.username,
-          email: formData.email,
-          phone: formData.phone,
-        },
-      });
-
-      // Clear the form on successful registration
-      setFormData({
-        username: "",
-        email: "",
-        phone: "",
-        password: "",
-      });
+      setTimeout(() => {
+        router.push("/login");
+      }, 1000);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Failed to connect to local backend (http://localhost:5000)";
-      toast(errorMsg, "danger");
+      toast(err instanceof Error ? err.message : "Failed to create account", "danger");
     } finally {
       setLoading(false);
     }
@@ -86,131 +63,110 @@ export default function RegisterPage() {
             { href: "/admin/dashboard", label: "Admin Portal" },
           ]}
         >
-          <div className="mt-6 grid gap-6 lg:grid-cols-[.95fr_1.05fr]">
-            <Panel className="flex flex-col justify-between p-8">
-              <div className="space-y-5">
-                <Badge tone="primary">Admin Registration</Badge>
-                <h1 className="text-4xl font-semibold tracking-tight text-white">
-                  Create Admin Account.
-                </h1>
-                <p className="text-sm leading-6 text-slate-400">
-                  Register a new administrator according to the database schema. Data is received by the local Python Flask service and stored directly into PostgreSQL.
-                </p>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-slate-300 space-y-2">
-                  <p className="font-semibold text-orange-300 uppercase tracking-wider">Admin Schema Specification:</p>
-                  <div className="grid gap-2 text-slate-300">
-                    <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="font-mono text-orange-200">username</span>
-                      <span className="text-slate-400">VARCHAR (NOT NULL)</span>
-                    </div>
-                    <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="font-mono text-orange-200">email</span>
-                      <span className="text-slate-400">VARCHAR (NOT NULL)</span>
-                    </div>
-                    <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="font-mono text-orange-200">phone</span>
-                      <span className="text-slate-400">VARCHAR (NOT NULL)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-mono text-orange-200">password_hash</span>
-                      <span className="text-slate-400">VARCHAR (NOT NULL)</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-xs text-emerald-300">
-                <span className="font-semibold">Target Route:</span> <code className="text-white">POST http://localhost:5000/login</code>
+          <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.95fr_1.05fr]">
+            <Panel className="p-8">
+              <Badge tone="primary">Customer registration</Badge>
+              <h1 className="mt-5 text-4xl font-semibold tracking-tight">Create your customer profile.</h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+                Join Food Ninja to order food from your favorite restaurants across the city, track your deliveries in real-time, and earn rewards.
+              </p>
+              <div className="mt-8 grid gap-3 text-sm text-slate-300">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Saved addresses & instant checkout</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Live order & rider tracking</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Ratings, reviews & deals</div>
               </div>
             </Panel>
 
             <Panel className="p-8">
-              <div className="space-y-6">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Register</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Admin Details</h2>
-                </div>
+              <form onSubmit={handleRegister} className="grid gap-4">
+                <label className="space-y-2 text-sm text-slate-300">
+                  Full name *
+                  <input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!username) {
+                        setUsername(e.target.value.replace(/\s+/g, "").toLowerCase());
+                      }
+                    }}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Your full name"
+                    required
+                  />
+                </label>
 
-                <form onSubmit={handleSubmit} className="grid gap-4">
-                  <label className="space-y-1.5 text-sm text-slate-300">
-                    <span>Username</span>
-                    <input
-                      type="text"
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required
-                      placeholder="e.g. system_admin"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400/60 focus:bg-white/10"
-                    />
-                  </label>
+                <label className="space-y-2 text-sm text-slate-300">
+                  Username *
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Choose a unique username"
+                    required
+                  />
+                </label>
 
-                  <label className="space-y-1.5 text-sm text-slate-300">
-                    <span>Email Address</span>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="admin@foodninja.com"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400/60 focus:bg-white/10"
-                    />
-                  </label>
+                <label className="space-y-2 text-sm text-slate-300">
+                  Phone number *
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="+880 1700 000000"
+                    required
+                  />
+                </label>
 
-                  <label className="space-y-1.5 text-sm text-slate-300">
-                    <span>Phone Number</span>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                      placeholder="+880 1700-000000"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400/60 focus:bg-white/10"
-                    />
-                  </label>
+                <label className="space-y-2 text-sm text-slate-300">
+                  Email *
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="name@example.com"
+                    required
+                  />
+                </label>
 
-                  <label className="space-y-1.5 text-sm text-slate-300">
-                    <span>Password</span>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      placeholder="Create admin password"
-                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-orange-400/60 focus:bg-white/10"
-                    />
-                  </label>
+                <label className="space-y-2 text-sm text-slate-300">
+                  Password *
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Create password"
+                    required
+                  />
+                </label>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-orange-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                        </svg>
-                        Saving Admin to Database...
-                      </span>
-                    ) : (
-                      "Register Admin & Write to DB"
-                    )}
-                  </button>
-                </form>
+                <label className="space-y-2 text-sm text-slate-300">
+                  Default delivery address (optional)
+                  <input
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Home, street, city"
+                  />
+                </label>
 
-                <p className="text-sm text-slate-400">
-                  Already registered?{" "}
-                  <Link href="/login" className="text-orange-300 hover:underline">
-                    Back to Admin Login
-                  </Link>
-                </p>
-              </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={cn(
+                    "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                  )}
+                >
+                  {loading ? "Creating account..." : "Create account"}
+                </button>
+              </form>
+              <p className="mt-5 text-sm text-slate-400">
+                Already registered?{" "}
+                <Link href="/login" className="text-orange-300 hover:underline">
+                  Sign in here
+                </Link>
+              </p>
             </Panel>
           </div>
         </AuthChrome>
