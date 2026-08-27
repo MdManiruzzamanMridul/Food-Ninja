@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from psycopg_pool import ConnectionPool
-import psycopg
 from psycopg.rows import dict_row
 
 load_dotenv()
