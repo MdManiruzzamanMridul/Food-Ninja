@@ -2,73 +2,67 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
-import { Panel, Badge, cn } from "@/components/ui";
+import { Panel, Badge } from "@/components/ui";
+import { Modal } from "@/components/modal";
 import { useToast } from "@/components/toast-provider";
-import { apiLogin } from "@/lib/backend";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
-
-  const [role, setRole] = useState<"Customer" | "Admin">("Customer");
-  const [open, setOpen] = useState(false);
-
-  // Form Fields matching login.py exactly
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    message: string;
+    data?: { username: string; email: string; phone: string };
+  } | null>(null);
 
-  const roles: Array<"Customer" | "Admin"> = ["Customer", "Admin"];
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (role === "Admin") {
-      if (!username.trim() || !email.trim() || !phone.trim() || !password.trim()) {
-        toast("Admin login requires Username, Email, Phone, and Password", "warning");
-        return;
-      }
-    } else {
-      if (!email.trim() || !phone.trim() || !password.trim()) {
-        toast("Customer login requires Email, Phone, and Password", "warning");
-        return;
-      }
+    if (!formData.username || !formData.email || !formData.phone || !formData.password) {
+      toast("Please fill in all 4 admin fields (username, email, phone, password)", "warning");
+      return;
     }
 
     setLoading(true);
+
     try {
-      if (role === "Admin") {
-        await apiLogin({
-          user_type: "admin",
-          username: username.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
-          password: password.trim(),
-        });
-      } else {
-        await apiLogin({
-          user_type: "user",
-          email: email.trim(),
-          phone: phone.trim(),
-          password: password.trim(),
-        });
+      const response = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to authenticate/save admin");
       }
 
-      toast("Login successful! Redirecting...", "success");
-
-      setTimeout(() => {
-        if (role === "Admin") {
-          router.push("/admin/dashboard");
-        } else {
-          router.push("/home");
-        }
-      }, 600);
+      toast(result.message || "Admin saved successfully!", "success");
+      setSuccessData({
+        message: result.message || "Admin data successfully written to database!",
+        data: result.data || {
+          username: formData.username,
+          email: formData.email,
+          phone: formData.phone,
+        },
+      });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to log in", "danger");
+      const errorMsg = err instanceof Error ? err.message : "Error connecting to backend server on port 5000";
+      toast(errorMsg, "danger");
     } finally {
       setLoading(false);
     }
@@ -238,9 +232,19 @@ export default function LoginPage() {
                 </form>
               </Panel>
             </div>
-          </AuthChrome>
+          ) : null}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setSuccessData(null)}
+              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Continue
+            </button>
+          </div>
         </div>
-      </div>
+      </Modal>
     </main>
   );
 }

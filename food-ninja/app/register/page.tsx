@@ -55,12 +55,12 @@ export default function RegisterPage() {
 
   return (
     <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
         <AuthChrome
           nav={[
             { href: "/login", label: "Login" },
             { href: "/register", label: "Register" },
-            { href: "/register/partner", label: "Partner" },
+            { href: "/admin/dashboard", label: "Admin Portal" },
           ]}
         >
           <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.95fr_1.05fr]">
@@ -171,6 +171,66 @@ export default function RegisterPage() {
           </div>
         </AuthChrome>
       </div>
+
+      {/* Website Popup Modal for Successful DB Write */}
+      <Modal
+        open={Boolean(successData)}
+        title="Admin Registered Successfully!"
+        description="The admin data was transmitted to the local backend and inserted into the PostgreSQL database table."
+        onClose={() => setSuccessData(null)}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-50 p-4 text-emerald-800">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-lg">
+              ✓
+            </div>
+            <div>
+              <p className="font-semibold text-emerald-900">{successData?.message}</p>
+              <p className="text-xs text-emerald-700 mt-0.5">PostgreSQL Table: <code>admin</code> (Status: pending)</p>
+            </div>
+          </div>
+
+          {successData?.data ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Registered Admin Details</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-slate-500 text-xs block">Username:</span>
+                  <span className="font-medium text-slate-900">{successData.data.username}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-xs block">Email:</span>
+                  <span className="font-medium text-slate-900">{successData.data.email}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-xs block">Phone:</span>
+                  <span className="font-medium text-slate-900">{successData.data.phone}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 text-xs block">Password:</span>
+                  <span className="font-medium text-slate-900">•••••••• (Encrypted in DB)</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Link
+              href="/login"
+              className="rounded-full bg-orange-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-600"
+            >
+              Go to Login
+            </Link>
+            <button
+              type="button"
+              onClick={() => setSuccessData(null)}
+              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </main>
   );
 }

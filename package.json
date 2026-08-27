@@ -1,0 +1,13 @@
+{
+  "name": "food-ninja-root",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix food-ninja",
+    "build": "npm run build --prefix food-ninja",
+    "start": "npm run start --prefix food-ninja",
+    "lint": "npm run lint --prefix food-ninja",
+    "db:import-dhaka": "npm run db:import-dhaka --prefix food-ninja --",
+    "db:verify-dhaka": "npm run db:verify-dhaka --prefix food-ninja"
+  }
+}
