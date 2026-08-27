@@ -2,14 +2,77 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ActionButton } from "@/components/action-button";
+import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
-import { Panel, Badge } from "@/components/ui";
+import { Panel, Badge, cn } from "@/components/ui";
+import { useToast } from "@/components/toast-provider";
+import { apiLogin } from "@/lib/backend";
 
 export default function LoginPage() {
-  const [role, setRole] = useState("Customer");
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [role, setRole] = useState<"Customer" | "Admin">("Customer");
   const [open, setOpen] = useState(false);
-  const roles = ["Customer", "Partner", "Admin"];
+
+  // Form Fields matching login.py exactly
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const roles: Array<"Customer" | "Admin"> = ["Customer", "Admin"];
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (role === "Admin") {
+      if (!username.trim() || !email.trim() || !phone.trim() || !password.trim()) {
+        toast("Admin login requires Username, Email, Phone, and Password", "warning");
+        return;
+      }
+    } else {
+      if (!email.trim() || !phone.trim() || !password.trim()) {
+        toast("Customer login requires Email, Phone, and Password", "warning");
+        return;
+      }
+    }
+
+    setLoading(true);
+    try {
+      if (role === "Admin") {
+        await apiLogin({
+          user_type: "admin",
+          username: username.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password.trim(),
+        });
+      } else {
+        await apiLogin({
+          user_type: "user",
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password.trim(),
+        });
+      }
+
+      toast("Login successful! Redirecting...", "success");
+
+      setTimeout(() => {
+        if (role === "Admin") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/home");
+        }
+      }, 600);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to log in", "danger");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
@@ -18,8 +81,8 @@ export default function LoginPage() {
           <AuthChrome
             nav={[
               { href: "/login", label: "Login" },
-              { href: "/register", label: "Register" },
-              { href: "/register/partner", label: "Partner" },
+              { href: "/register", label: "Register Customer" },
+              { href: "/register/partner", label: "Register Admin" },
             ]}
           >
             <div className="mt-6 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
@@ -28,41 +91,94 @@ export default function LoginPage() {
                   <Badge tone="primary">Unified login portal</Badge>
                   <h1 className="text-4xl font-semibold tracking-tight">Sign in to Food Ninja.</h1>
                   <p className="text-sm leading-6 text-slate-400">
-                    This UI keeps one login entry for all roles. The backend can route the account to the correct dashboard after authentication.
+                    Authenticate directly against the backend PostgreSQL database using role-specific credentials.
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {["Customer", "Partner", "Admin"].map((item) => (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {roles.map((item) => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => setRole(item)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${role === item ? "border-orange-400/40 bg-orange-500/15 text-white" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"}`}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                        role === item
+                          ? "border-orange-400/40 bg-orange-500/15 text-white"
+                          : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                      }`}
                     >
-                      <span className="block font-medium">{item}</span>
-                      <span className="text-xs text-slate-400">Role-aware routing</span>
+                      <span className="block font-medium">{item} Login</span>
+                      <span className="text-xs text-slate-400">
+                        {item === "Admin" ? "Username, Email, Phone, Pass" : "Email, Phone, Password"}
+                      </span>
                     </button>
                   ))}
                 </div>
               </Panel>
 
               <Panel className="p-8">
-                <div className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Login</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Welcome back</h2>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                      {role === "Admin" ? "Admin Sign In" : "Customer Sign In"}
+                    </h2>
                   </div>
+
                   <div className="grid gap-4">
+                    {/* Admin Only: Username field */}
+                    {role === "Admin" && (
+                      <label className="space-y-2 text-sm text-slate-300">
+                        <span>Admin Username *</span>
+                        <input
+                          value={username}
+                          onChange={(e) => setUsername(e.target.value)}
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                          placeholder="e.g. admin_sam"
+                          required
+                        />
+                      </label>
+                    )}
+
+                    {/* Email field (Both Admin & Customer) */}
                     <label className="space-y-2 text-sm text-slate-300">
-                      Email or phone
-                      <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500" placeholder="name@example.com" />
+                      <span>Email Address *</span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                        placeholder="name@example.com"
+                        required
+                      />
                     </label>
+
+                    {/* Phone field (Both Admin & Customer) */}
                     <label className="space-y-2 text-sm text-slate-300">
-                      Password
-                      <input type="password" className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500" placeholder="••••••••" />
+                      <span>Phone Number *</span>
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                        placeholder="+880 1700 000000"
+                        required
+                      />
                     </label>
+
+                    {/* Password field (Both Admin & Customer) */}
+                    <label className="space-y-2 text-sm text-slate-300">
+                      <span>Password *</span>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                        placeholder="••••••••"
+                        required
+                      />
+                    </label>
+
                     <div className="space-y-2 text-sm text-slate-300">
-                      <span>Login target</span>
+                      <span>Selected Role</span>
                       <div className="relative">
                         <button
                           type="button"
@@ -82,7 +198,9 @@ export default function LoginPage() {
                                   setRole(item);
                                   setOpen(false);
                                 }}
-                                className={`flex w-full items-center px-4 py-3 text-left transition ${role === item ? "bg-orange-500/15 text-white" : "text-slate-300 hover:bg-white/5"}`}
+                                className={`flex w-full items-center px-4 py-3 text-left transition ${
+                                  role === item ? "bg-orange-500/15 text-white" : "text-slate-300 hover:bg-white/5"
+                                }`}
                               >
                                 {item}
                               </button>
@@ -91,18 +209,33 @@ export default function LoginPage() {
                         ) : null}
                       </div>
                     </div>
-                    <ActionButton endpoint="/auth/login" label={`Login as ${role}`} />
-                    <p className="text-xs leading-5 text-slate-500">
-                      Replace the placeholder request in <code className="rounded bg-white/5 px-1.5 py-0.5">components/action-button.tsx</code> or the backend bridge when real auth is ready.
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={cn(
+                        "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                      )}
+                    >
+                      {loading ? "Signing in..." : `Sign in as ${role}`}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-sm text-slate-400">
+                    <p>
+                      New customer?{" "}
+                      <Link href="/register" className="text-orange-300 hover:underline">
+                        Create customer account
+                      </Link>
+                    </p>
+                    <p>
+                      Need admin access?{" "}
+                      <Link href="/register/partner" className="text-orange-300 hover:underline">
+                        Register as Admin
+                      </Link>
                     </p>
                   </div>
-                  <p className="text-sm text-slate-400">
-                    New here?{" "}
-                    <Link href="/register" className="text-orange-300">
-                      Create a customer account
-                    </Link>
-                  </p>
-                </div>
+                </form>
               </Panel>
             </div>
           </AuthChrome>
