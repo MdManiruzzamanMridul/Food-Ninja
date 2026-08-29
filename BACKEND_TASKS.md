@@ -209,3 +209,46 @@ To achieve full integration with the Next.js frontend, the following endpoints s
 - [ ] `GET /admin/orders`: Global order audit log.
 - [ ] `GET /admin/payments`: Transaction and payout logs.
 
+---
+
+## 🎯 4. First-Time Onboarding & Location API Contract
+
+The frontend now features a smooth 3-step onboarding flow for newly registered users on their first login:
+1. **Step 1:** Foodie Persona & Avatar (`pfp`).
+2. **Step 2:** Missing Database Fields (`name`, `nid`, `phone`).
+3. **Step 3:** Interactive Map Pin & Live GPS Location (`latitude`, `longitude`).
+
+### Location Endpoint Contract (`PATCH /users/me/location`)
+- **Headers:** `Authorization: Bearer <jwt_token>`, `Content-Type: application/json`
+- **Request Body:**
+  ```json
+  {
+    "latitude": 23.792500,
+    "longitude": 90.407800
+  }
+  ```
+- **PostGIS Storage:**
+  Stored in `users.location` (or `rider.location`) as `GEOGRAPHY(Point, 4326)`.
+  Ensure `Backend/utils.py` and `Backend/Queries/update_info.sql` receive coordinates in correct order:
+  `ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)` *(Notice longitude is X, latitude is Y)*.
+
+---
+
+## 📦 5. Missing Dependency in `Backend/requirements.txt`
+- `Backend/utils.py` imports `requests` (for Google Maps API calls), but `requests` is missing from `requirements.txt`.
+- **Action for Teammate:** Add `requests>=2.31.0` to `food-ninja/Backend/requirements.txt`.
+
+---
+
+## 👥 6. Role Selection & Simplified Registration Flow
+The frontend registration now uses a modern role selection popup (**Customer**, **Restaurant Owner**, **Rider**, **Admin**).
+
+### Payload Sent to `POST /register`:
+- **Customer (`user`)**:
+  `{ "user_type": "user", "email": "...", "phone": "...", "password": "...", "username": "...", "name": "..." }`
+- **Rider (`rider`)**:
+  `{ "user_type": "rider", "email": "...", "phone": "...", "password": "...", "username": "...", "name": "...", "vehicle": "bike"|"bicycle" }`
+- **Admin (`admin`)**:
+  `{ "user_type": "admin", "username": "...", "email": "...", "phone": "...", "password": "..." }`
+- All remaining profile attributes (`nid`, `pfp`, exact legal name, and PostGIS `location`) are gathered upon first login in the onboarding sequence.
+

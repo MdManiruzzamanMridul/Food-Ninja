@@ -2,66 +2,91 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
-import { Panel, Badge } from "@/components/ui";
-import { Modal } from "@/components/modal";
+import { Panel, Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
+import { apiLogin, isOnboarded } from "@/lib/backend";
+import { OnboardingModal } from "@/components/onboarding-modal";
+
+const roles = [
+  { id: "user", label: "Customer", hint: "Browse and order food", redirect: "/home" },
+  { id: "admin", label: "Admin", hint: "Platform management", redirect: "/admin/dashboard" },
+  { id: "rider", label: "Rider", hint: "Deliveries and tracking", redirect: "/rider/dashboard" },
+] as const;
+
+type RoleType = (typeof roles)[number]["id"];
 
 export default function LoginPage() {
+  const router = useRouter();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    phone: "",
-    password: "",
-  });
+
+  const [selectedRole, setSelectedRole] = useState<RoleType>("user");
+  const [userInfo, setUserInfo] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successData, setSuccessData] = useState<{
-    message: string;
-    data?: { username: string; email: string; phone: string };
-  } | null>(null);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  }
+  // Onboarding modal state for first-time login
+  const [onboardingState, setOnboardingState] = useState<{
+    open: boolean;
+    username: string;
+    userType: RoleType;
+    initialPhone?: string;
+    targetRedirect: string;
+  }>({
+    open: false,
+    username: "",
+    userType: "user",
+    initialPhone: "",
+    targetRedirect: "/home",
+  });
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!formData.username || !formData.email || !formData.phone || !formData.password) {
-      toast("Please fill in all 4 admin fields (username, email, phone, password)", "warning");
+    if (!userInfo.trim() || !password) {
+      toast("Please enter your Username/Email/Phone and Password", "warning");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      // Backend expects user_info (email, phone, or username) + password + user_type
+      const payload = {
+        user_type: selectedRole as "user" | "admin",
+        user_info: userInfo.trim(),
+        password,
+      } as const;
 
-      const result = await response.json();
+      const result = await apiLogin(payload as any);
+      const activeUsername = result.username || userInfo.trim();
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Failed to authenticate/save admin");
+      toast(`Successfully logged in as ${selectedRole.toUpperCase()}!`, "success");
+
+      const matchedRole = roles.find((r) => r.id === selectedRole);
+      const targetPath = matchedRole ? matchedRole.redirect : "/home";
+
+      // Check if user has completed first-time profile setup
+      const hasOnboarded = isOnboarded(activeUsername);
+
+      if (!hasOnboarded) {
+        // Trigger multi-step profile & map location onboarding
+        setOnboardingState({
+          open: true,
+          username: activeUsername,
+          userType: selectedRole,
+          initialPhone: userInfo.startsWith("01") || userInfo.startsWith("+8801") ? userInfo.trim() : "",
+          targetRedirect: targetPath,
+        });
+      } else {
+        // Direct navigation for recurring logins
+        setTimeout(() => {
+          router.push(targetPath);
+        }, 500);
       }
-
-      toast(result.message || "Admin saved successfully!", "success");
-      setSuccessData({
-        message: result.message || "Admin data successfully written to database!",
-        data: result.data || {
-          username: formData.username,
-          email: formData.email,
-          phone: formData.phone,
-        },
-      });
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Error connecting to backend server on port 5000";
+      const errorMsg = err instanceof Error ? err.message : "Authentication failed";
       toast(errorMsg, "danger");
     } finally {
       setLoading(false);
@@ -70,181 +95,135 @@ export default function LoginPage() {
 
   return (
     <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-6 lg:grid-cols-[.9fr_1.1fr]">
-        <div className="lg:col-span-2">
-          <AuthChrome
-            nav={[
-              { href: "/login", label: "Login" },
-              { href: "/register", label: "Register Customer" },
-              { href: "/register/partner", label: "Register Admin" },
-            ]}
-          >
-            <div className="mt-6 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
-              <Panel className="flex flex-col justify-between p-8">
-                <div className="space-y-5">
-                  <Badge tone="primary">Unified login portal</Badge>
-                  <h1 className="text-4xl font-semibold tracking-tight">Sign in to Food Ninja.</h1>
-                  <p className="text-sm leading-6 text-slate-400">
-                    Authenticate directly against the backend PostgreSQL database using role-specific credentials.
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+      <div className="mx-auto max-w-5xl">
+        <AuthChrome
+          nav={[
+            { href: "/login", label: "Login" },
+            { href: "/register", label: "Register Customer" },
+            { href: "/register/partner", label: "Register Admin / Partner" },
+          ]}
+        >
+          <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.9fr_1.1fr]">
+            <Panel className="flex flex-col justify-between p-8">
+              <div className="space-y-5">
+                <Badge tone="primary">Unified login portal</Badge>
+                <h1 className="text-4xl font-semibold tracking-tight text-white">Sign in to Food Ninja</h1>
+                <p className="text-sm leading-6 text-slate-400">
+                  Authenticate directly against the PostgreSQL backend database using role-specific credentials.
+                </p>
+              </div>
+
+              <div className="mt-8 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Select Role</p>
+                <div className="grid gap-3">
                   {roles.map((item) => (
                     <button
-                      key={item}
+                      key={item.id}
                       type="button"
-                      onClick={() => setRole(item)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                        role === item
+                      onClick={() => setSelectedRole(item.id)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left text-sm transition",
+                        selectedRole === item.id
                           ? "border-orange-400/40 bg-orange-500/15 text-white"
                           : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-                      }`}
+                      )}
                     >
-                      <span className="block font-medium">{item} Login</span>
-                      <span className="text-xs text-slate-400">
-                        {item === "Admin" ? "Username, Email, Phone, Pass" : "Email, Phone, Password"}
-                      </span>
+                      <span className="block font-medium">{item.label} Login</span>
+                      <span className="text-xs text-slate-400">{item.hint}</span>
                     </button>
                   ))}
                 </div>
-              </Panel>
+              </div>
+            </Panel>
 
-              <Panel className="p-8">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Login</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">
-                      {role === "Admin" ? "Admin Sign In" : "Customer Sign In"}
-                    </h2>
-                  </div>
+            <Panel className="p-8">
+              <form onSubmit={handleLogin} autoComplete="off" className="space-y-5">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Sign In</p>
+                  <h2 className="mt-1 text-2xl font-semibold text-white">
+                    {roles.find((r) => r.id === selectedRole)?.label} Sign In
+                  </h2>
+                </div>
 
-                  <div className="grid gap-4">
-                    {/* Admin Only: Username field */}
-                    {role === "Admin" && (
-                      <label className="space-y-2 text-sm text-slate-300">
-                        <span>Admin Username *</span>
-                        <input
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                          placeholder="e.g. admin_sam"
-                          required
-                        />
-                      </label>
-                    )}
+                <label className="block space-y-2 text-sm text-slate-300">
+                  <span>Username, Email, or Phone *</span>
+                  <input
+                    name="ninja_login_user"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    value={userInfo}
+                    onChange={(e) => setUserInfo(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
+                    placeholder="Enter email, phone, or username"
+                    required
+                  />
+                </label>
 
-                    {/* Email field (Both Admin & Customer) */}
-                    <label className="space-y-2 text-sm text-slate-300">
-                      <span>Email Address *</span>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                        placeholder="name@example.com"
-                        required
-                      />
-                    </label>
+                <label className="block space-y-2 text-sm text-slate-300">
+                  <span>Password *</span>
+                  <input
+                    type="password"
+                    name="ninja_login_pass"
+                    autoComplete="current-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
+                    placeholder="••••••••"
+                    required
+                  />
+                </label>
 
-                    {/* Phone field (Both Admin & Customer) */}
-                    <label className="space-y-2 text-sm text-slate-300">
-                      <span>Phone Number *</span>
-                      <input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                        placeholder="+880 1700 000000"
-                        required
-                      />
-                    </label>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={cn(
+                    "mt-4 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                  )}
+                >
+                  {loading ? "Authenticating..." : `Sign in as ${roles.find((r) => r.id === selectedRole)?.label}`}
+                </button>
 
-                    {/* Password field (Both Admin & Customer) */}
-                    <label className="space-y-2 text-sm text-slate-300">
-                      <span>Password *</span>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                        placeholder="••••••••"
-                        required
-                      />
-                    </label>
-
-                    <div className="space-y-2 text-sm text-slate-300">
-                      <span>Selected Role</span>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setOpen((current) => !current)}
-                          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-white outline-none transition hover:bg-white/10"
-                        >
-                          <span>{role}</span>
-                          <span className="text-slate-400">{open ? "▴" : "▾"}</span>
-                        </button>
-                        {open ? (
-                          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/40">
-                            {roles.map((item) => (
-                              <button
-                                key={item}
-                                type="button"
-                                onClick={() => {
-                                  setRole(item);
-                                  setOpen(false);
-                                }}
-                                className={`flex w-full items-center px-4 py-3 text-left transition ${
-                                  role === item ? "bg-orange-500/15 text-white" : "text-slate-300 hover:bg-white/5"
-                                }`}
-                              >
-                                {item}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={cn(
-                        "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
-                      )}
-                    >
-                      {loading ? "Signing in..." : `Sign in as ${role}`}
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col gap-1 text-sm text-slate-400">
-                    <p>
-                      New customer?{" "}
-                      <Link href="/register" className="text-orange-300 hover:underline">
-                        Create customer account
-                      </Link>
-                    </p>
-                    <p>
-                      Need admin access?{" "}
-                      <Link href="/register/partner" className="text-orange-300 hover:underline">
-                        Register as Admin
-                      </Link>
-                    </p>
-                  </div>
-                </form>
-              </Panel>
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setSuccessData(null)}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Continue
-            </button>
+                <div className="pt-2 text-xs text-slate-400 space-y-1">
+                  <p>
+                    Redirect destination:{" "}
+                    <code className="text-orange-300 font-mono">
+                      {roles.find((r) => r.id === selectedRole)?.redirect}
+                    </code>
+                  </p>
+                  <p>
+                    Don't have an account?{" "}
+                    <Link href="/register" className="text-orange-300 hover:underline">
+                      Register Customer
+                    </Link>{" "}
+                    |{" "}
+                    <Link href="/register/partner" className="text-orange-300 hover:underline">
+                      Register Admin
+                    </Link>
+                  </p>
+                </div>
+              </form>
+            </Panel>
           </div>
-        </div>
-      </Modal>
+        </AuthChrome>
+      </div>
+
+      {/* First-Time Profile & Map Location Onboarding Modal */}
+      <OnboardingModal
+        open={onboardingState.open}
+        username={onboardingState.username}
+        userType={onboardingState.userType}
+        initialPhone={onboardingState.initialPhone}
+        targetRedirect={onboardingState.targetRedirect}
+        onComplete={(destination) => {
+          setOnboardingState((prev) => ({ ...prev, open: false }));
+          toast("Profile setup completed! Welcome to Food Ninja.", "success");
+          router.push(destination);
+        }}
+      />
     </main>
   );
 }
+

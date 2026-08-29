@@ -199,3 +199,52 @@ export async function submitPlatformRequest<T>(
     data: payload as T,
   };
 }
+
+// Update user/rider location via Flask Backend PostGIS endpoint
+export async function apiUpdateLocation(payload: { latitude: number; longitude: number }): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+
+  const res = await fetch(`${BACKEND_URL}/users/me/location`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to update location");
+  }
+
+  return data;
+}
+
+// Onboarding persistence helpers
+export function isOnboarded(username: string): boolean {
+  if (typeof window === "undefined" || !username) return false;
+  return localStorage.getItem(`food_ninja_onboarded_${username}`) === "true";
+}
+
+export function setOnboarded(username: string, details?: Record<string, unknown>): void {
+  if (typeof window === "undefined" || !username) return;
+  localStorage.setItem(`food_ninja_onboarded_${username}`, "true");
+  if (details) {
+    localStorage.setItem(`food_ninja_profile_${username}`, JSON.stringify(details));
+  }
+}
+
+export function getOnboardingDetails(username: string): Record<string, unknown> | null {
+  if (typeof window === "undefined" || !username) return null;
+  const data = localStorage.getItem(`food_ninja_profile_${username}`);
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}

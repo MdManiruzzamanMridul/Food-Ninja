@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { landingRestaurants } from "@/lib/platform";
 import { getRestaurantCards } from "@/lib/restaurants";
+import { LandingHeader } from "@/components/landing-header";
 
 export const dynamic = "force-dynamic";
 
@@ -34,20 +35,7 @@ export default async function LandingPage() {
   return (
     <main className="min-h-screen bg-[#f6f1e8] px-4 py-6 text-slate-900">
       <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex items-center justify-between rounded-[28px] border border-black/5 bg-white/85 px-5 py-4 shadow-sm backdrop-blur">
-          <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-amber-700">Food Ninja</p>
-            <p className="text-sm text-slate-500">Fast delivery, simple ordering, and live tracking.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" prefetch={false} className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
-              Login
-            </Link>
-            <Link href="/register" prefetch={false} className="rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-600">
-              Create account
-            </Link>
-          </div>
-        </header>
+        <LandingHeader />
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
           <div className="rounded-[36px] border border-black/5 bg-white p-8 shadow-sm md:p-12">
