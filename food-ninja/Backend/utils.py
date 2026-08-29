@@ -76,7 +76,7 @@ def updateLocation(user_type, username, longitude, latitude,):
                 else:
                     return "invalid_user_type"
 
-                cur.execute(query, (latitude, longitude, username))
+                cur.execute(query, (longitude, latitude, username))
                 return "success"
 
             except psycopg.Error:
@@ -129,7 +129,7 @@ def updatePhone(user_type, username, phone):
                 return "database_error"
 
 
-def getNearbyRestaurents(username, food_cat):
+def getNearbyRestaurants(username, food_cat):
     with get_connection() as conn:     
         with conn.cursor() as cur: 
 
@@ -148,13 +148,13 @@ def getNearbyRestaurents(username, food_cat):
             
             user_location = {"latitude": user["latitude"], "longitude": user["longitude"]}
 
-            query = load_query("nearby_restaurents.sql", "get_nearby_restaurents")
+            query = load_query("nearby_restaurants.sql", "get_nearby_restaurants")
             
             cur.execute(query, (user_location.get("longitude"), user_location.get("latitude"), 5000, food_cat, food_cat))
             rows = cur.fetchall()
 
-            filtered_restaurents = filterRestaurents(rows, user_location)
-            return filtered_restaurents
+            filtered_restaurants = filterRestaurants(rows, user_location)
+            return filtered_restaurants
 
 def getDistanceTime(restaurants, user):
     origins = []
@@ -234,13 +234,13 @@ def getDistanceTime(restaurants, user):
 
     return restaurants
 
-def filterRestaurents(Restaurents, user):
-    restaurents = getDistanceTime(Restaurents, user)
-    restaurents = [
-        r for r in restaurents
+def filterRestaurants(restaurants, user):
+    restaurants = getDistanceTime(restaurants, user)
+    restaurants = [
+        r for r in restaurants
         if r["distance"] <= 5000 and r["max_delivery_time"] <= 120
     ]
-    return restaurents
+    return restaurants
 
 def is_valid_food_cat(food_cat):
     with get_connection() as conn:     

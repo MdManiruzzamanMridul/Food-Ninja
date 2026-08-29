@@ -1,11 +1,11 @@
---name:get_nearby_restaurents
+--name:get_nearby_restaurants
 SELECT name, 
     ST_Y(R.location::geometry) AS latitude,
     ST_X(R.location::geometry) AS longitude,
-    open_time, close_time, status, COALESCE( AVG(RV.restaurent_rating), 0) AS AVG_RATING
-FROM restaurents R 
-LEFT JOIN cart C ON (R.restaurent_id = C.restaurent_id)
-LEFT JOIN orders O ON (C.cart_id = O.card_id)
+    open_time, close_time, status, COALESCE( AVG(RV.restaurant_rating), 0) AS AVG_RATING
+FROM restaurant R 
+LEFT JOIN cart C ON (R.restaurant_id = C.restaurant_id)
+LEFT JOIN orders O ON (C.cart_id = O.cart_id)
 LEFT JOIN review RV ON (O.order_id = RV.order_id)
 WHERE ST_DWithin(
     R.location,
@@ -21,11 +21,11 @@ AND (
             SELECT 1 
             FROM foods F
             WHERE F.category = %s
-            AND F.restaurent_id = R.restaurent_id
+            AND F.restaurant_id = R.restaurant_id
         )
 )
 GROUP BY
-    R.restaurent_id,
+    R.restaurant_id,
     R.name,
     R.location,
     R.open_time,
