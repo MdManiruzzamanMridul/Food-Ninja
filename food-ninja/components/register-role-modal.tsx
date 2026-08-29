@@ -1,55 +1,94 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Badge, cn } from "@/components/ui";
-import { useToast } from "@/components/toast-provider";
-import { apiRegister } from "@/lib/backend";
+import { cn } from "@/components/ui";
 
 type RoleOption = {
-  id: "user" | "rider" | "admin" | "owner";
+  id: "user" | "rider" | "owner" | "admin";
+  code: string;
   title: string;
-  subtitle: string;
+  category: string;
+  description: string;
   badge: string;
-  icon: string;
-  tone: string;
+  icon: "user" | "rider" | "owner" | "admin";
 };
 
 const ROLES: RoleOption[] = [
   {
     id: "user",
-    title: "Customer (Foodie)",
-    subtitle: "Explore 100+ Dhaka restaurants, order favorite meals, & track live.",
-    badge: "Most Popular",
-    icon: "🛒",
-    tone: "from-orange-500/20 to-amber-500/10 border-orange-500/30",
+    code: "01",
+    title: "Customer",
+    category: "Food Enthusiast",
+    description: "Browse 100+ Dhaka culinary spots, real-time live routing, and fast door delivery.",
+    badge: "Foodie",
+    icon: "user",
   },
   {
     id: "rider",
-    title: "Delivery Rider",
-    subtitle: "Deliver orders with bike or bicycle and earn on your schedule.",
-    badge: "Earn Daily",
-    icon: "🛵",
-    tone: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30",
+    code: "02",
+    title: "Delivery Partner",
+    category: "Logistics Fleet",
+    description: "Accept instant trip dispatches across Dhaka with motorbike or bicycle. Flexible daily payouts.",
+    badge: "Fleet",
+    icon: "rider",
   },
   {
     id: "owner",
+    code: "03",
     title: "Restaurant Owner",
-    subtitle: "List your restaurant, manage food menus, and grow revenue.",
-    badge: "Partner",
-    icon: "🏪",
-    tone: "from-sky-500/20 to-blue-500/10 border-sky-500/30",
+    category: "Merchant Partner",
+    description: "List food items, optimize kitchen throughput, and tap into citywide food orders.",
+    badge: "Merchant",
+    icon: "owner",
   },
   {
     id: "admin",
+    code: "04",
     title: "Platform Admin",
-    subtitle: "Manage ecosystem, verify riders, and monitor global metrics.",
-    badge: "Staff",
-    icon: "🛡️",
-    tone: "from-purple-500/20 to-pink-500/10 border-purple-500/30",
+    category: "Operations Control",
+    description: "Monitor platform metrics, manage partner accounts, and maintain city operations.",
+    badge: "Console",
+    icon: "admin",
   },
 ];
+
+function RoleIcon({ type }: { type: RoleOption["icon"] }) {
+  if (type === "user") {
+    return (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+  if (type === "rider") {
+    return (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="5.5" cy="17.5" r="3.5" />
+        <circle cx="18.5" cy="17.5" r="3.5" />
+        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5L9 9l3-3 3.5 3 2.5-.5" />
+        <path d="M12 17.5V14l-3-2.5" />
+      </svg>
+    );
+  }
+  if (type === "owner") {
+    return (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
+}
 
 export function RegisterRoleModal({
   open,
@@ -59,294 +98,118 @@ export function RegisterRoleModal({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const { toast } = useToast();
-
-  const [selectedRole, setSelectedRole] = useState<RoleOption["id"] | null>(null);
-
-  // Simplified Form state (strictly only Email, Phone, Password)
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [vehicle, setVehicle] = useState<"bike" | "bicycle">("bike");
-  const [loading, setLoading] = useState(false);
 
   if (!open) return null;
 
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!selectedRole) {
-      toast("Please select an account type to register", "warning");
-      return;
-    }
-
-    if (!email.trim() || !phone.trim() || !password) {
-      toast("Please fill in your Email, Phone Number, and Password", "warning");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Derive standard username and initial name from email prefix
-      const cleanPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") || `user_${Date.now().toString().slice(-4)}`;
-      const derivedUsername = cleanPrefix.toLowerCase();
-      const derivedName = cleanPrefix.charAt(0).toUpperCase() + cleanPrefix.slice(1);
-
-      if (selectedRole === "admin") {
-        await apiRegister({
-          user_type: "admin",
-          username: derivedUsername,
-          email: email.trim(),
-          phone: phone.trim(),
-          password,
-        });
-      } else if (selectedRole === "rider") {
-        await apiRegister({
-          user_type: "rider",
-          username: derivedUsername,
-          name: derivedName,
-          email: email.trim(),
-          phone: phone.trim(),
-          password,
-          vehicle,
-        } as any);
-      } else {
-        // Customer (user) or Restaurant Owner (user)
-        await apiRegister({
-          user_type: "user",
-          username: derivedUsername,
-          name: derivedName,
-          email: email.trim(),
-          phone: phone.trim(),
-          password,
-        });
-      }
-
-      toast("Account registered successfully! Redirecting to login...", "success");
-      onClose();
-
-      setTimeout(() => {
-        router.push("/login");
-      }, 800);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Failed to create account";
-      toast(errorMsg, "danger");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleBackToRoles() {
-    setSelectedRole(null);
-    setEmail("");
-    setPhone("");
-    setPassword("");
+  function handleSelectRole(roleId: RoleOption["id"]) {
+    onClose();
+    router.push(`/register?role=${roleId}`);
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 sm:p-6 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/15 bg-slate-900 text-white shadow-[0_25px_100px_-20px_rgba(0,0,0,0.8)]"
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden rounded-[28px] border border-black/10 bg-white text-slate-900 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5 sm:px-8">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-orange-400">Join Food Ninja</p>
-            <h3 className="mt-0.5 text-xl font-bold tracking-tight text-white">
-              {selectedRole
-                ? `Sign up as ${ROLES.find((r) => r.id === selectedRole)?.title}`
-                : "Choose Account Type"}
-            </h3>
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 sm:px-8 bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100 border border-amber-200 text-amber-700 font-bold">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                  Food Ninja
+                </span>
+                <span className="h-1 w-1 rounded-full bg-slate-300" />
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+                  Create Account
+                </span>
+              </div>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                Choose Account Type
+              </h2>
+            </div>
           </div>
+
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-600 transition hover:bg-slate-200 hover:text-slate-900"
           >
-            ✕
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 
-        <div className="p-6 sm:p-8">
-          {/* STEP 1: ROLE SELECTION CARDS */}
-          {!selectedRole ? (
-            <div className="space-y-4">
-              <p className="text-sm text-slate-400">
-                Select how you would like to use Food Ninja today. You can always manage your profile later.
-              </p>
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto p-6 sm:p-8 space-y-5">
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Select your account type to configure the right interface and permissions. You can register quickly with just your email and password.
+          </p>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {ROLES.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => setSelectedRole(role.id)}
-                    className={cn(
-                      "group flex flex-col justify-between rounded-2xl border p-5 text-left transition duration-200 hover:scale-[1.02] bg-gradient-to-br hover:shadow-lg",
-                      role.tone
-                    )}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-3xl transition group-hover:scale-110">{role.icon}</span>
-                        <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-300">
-                          {role.badge}
-                        </span>
-                      </div>
-                      <h4 className="mt-3 text-base font-bold text-white group-hover:text-orange-300 transition">
-                        {role.title}
-                      </h4>
-                      <p className="mt-1 text-xs text-slate-400 leading-relaxed">
-                        {role.subtitle}
-                      </p>
+          {/* Grid of Clean White Role Cards */}
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            {ROLES.map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => handleSelectRole(role.id)}
+                className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-slate-50/70 p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-400 hover:bg-amber-50/40 hover:shadow-md"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors duration-200 group-hover:border-amber-400 group-hover:bg-amber-500 group-hover:text-white">
+                      <RoleIcon type={role.icon} />
                     </div>
-                    <div className="mt-4 flex items-center text-xs font-semibold text-orange-400">
-                      <span>Select & Continue</span>
-                      <span className="ml-1 transition group-hover:translate-x-1">➔</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    <span className="rounded-full bg-slate-200/80 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-700 group-hover:bg-amber-200 group-hover:text-amber-900 transition-colors">
+                      {role.badge}
+                    </span>
+                  </div>
 
-              <div className="pt-2 text-center text-xs text-slate-400">
-                Already registered?{" "}
-                <Link href="/login" onClick={onClose} className="text-orange-400 font-semibold hover:underline">
-                  Sign in here
-                </Link>
-              </div>
-            </div>
-          ) : (
-            /* STEP 2: SIMPLIFIED REGISTRATION FORM (ONLY EMAIL, PHONE, PASSWORD) */
-            <form onSubmit={handleRegister} autoComplete="off" className="space-y-4 animate-fadeIn">
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">{ROLES.find((r) => r.id === selectedRole)?.icon}</span>
-                  <div>
-                    <p className="text-xs text-slate-400">Selected Role</p>
-                    <p className="text-sm font-semibold text-white">
-                      {ROLES.find((r) => r.id === selectedRole)?.title}
+                  <div className="mt-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">
+                      {role.category}
+                    </p>
+                    <h3 className="mt-0.5 text-base font-bold text-slate-900 group-hover:text-amber-800 transition-colors">
+                      {role.title}
+                    </h3>
+                    <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
+                      {role.description}
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleBackToRoles}
-                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10 hover:text-white"
-                >
-                  Change Role
-                </button>
-              </div>
 
-              {/* Email Input with Autofill Prevention */}
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>Email Address *</span>
-                <input
-                  type="email"
-                  name="user_email_ninja"
-                  autoComplete="off"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-              </label>
-
-              {/* Phone Input */}
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>Contact Phone *</span>
-                <input
-                  type="tel"
-                  name="user_phone_ninja"
-                  autoComplete="off"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="01700000000"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-              </label>
-
-              {/* Rider Vehicle selection (Only if Rider) */}
-              {selectedRole === "rider" && (
-                <div className="space-y-1.5">
-                  <span className="text-xs text-slate-300">Vehicle Type *</span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVehicle("bike")}
-                      className={cn(
-                        "rounded-xl border p-2.5 text-xs font-semibold transition text-center",
-                        vehicle === "bike"
-                          ? "border-emerald-500 bg-emerald-500/20 text-emerald-300"
-                          : "border-white/10 bg-white/5 text-slate-400 hover:text-white"
-                      )}
-                    >
-                      🏍️ Motorbike
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVehicle("bicycle")}
-                      className={cn(
-                        "rounded-xl border p-2.5 text-xs font-semibold transition text-center",
-                        vehicle === "bicycle"
-                          ? "border-emerald-500 bg-emerald-500/20 text-emerald-300"
-                          : "border-white/10 bg-white/5 text-slate-400 hover:text-white"
-                      )}
-                    >
-                      🚲 Bicycle
-                    </button>
-                  </div>
+                <div className="mt-5 flex items-center justify-between border-t border-slate-200/70 pt-3 text-xs font-semibold text-slate-700 group-hover:text-amber-700 transition-colors">
+                  <span>Register as {role.title.split(" ")[0]}</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
                 </div>
-              )}
+              </button>
+            ))}
+          </div>
 
-              {/* Password Input with new-password to stop browser fill */}
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>Create Password *</span>
-                <input
-                  type="password"
-                  name="ninja_password_new"
-                  autoComplete="new-password"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-                <span className="text-[10px] text-slate-500">
-                  Full legal name, NID, and map location will be configured on your first sign-in.
-                </span>
-              </label>
-
-              <div className="flex items-center justify-between pt-3">
-                <button
-                  type="button"
-                  onClick={handleBackToRoles}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-white/10"
-                >
-                  ← Back to Roles
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-orange-500/25 transition hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70"
-                >
-                  {loading ? "Creating Account..." : "Create Account ➔"}
-                </button>
-              </div>
-            </form>
-          )}
+          {/* Footer Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
+            <span>Already registered with an account?</span>
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 font-semibold text-amber-700 hover:text-amber-800 transition hover:underline"
+            >
+              <span>Sign in here</span>
+              <span>→</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

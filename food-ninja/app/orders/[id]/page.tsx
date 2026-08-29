@@ -54,13 +54,13 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
             </div>
           </Panel>
 
-          <Panel className="space-y-4 p-6">
-            <p className="text-sm uppercase tracking-[0.26em] text-slate-400">Backend hooks</p>
-            <p className="text-sm leading-6 text-slate-300">
-              Connect live socket updates, rider coordinates, and ETA recalculation into this screen when the real-time service is ready.
+          <Panel className="space-y-3 p-6">
+            <p className="text-sm font-semibold text-slate-800">Need help with your order?</p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              If you need to change your address or contact your rider, you can review your details in your profile.
             </p>
-            <Link href="/profile" className="text-sm font-medium text-orange-300">
-              View profile and order history →
+            <Link href="/profile" className="inline-block text-xs font-semibold text-amber-700 hover:underline">
+              View Profile & Saved Coordinates →
             </Link>
           </Panel>
         </div>

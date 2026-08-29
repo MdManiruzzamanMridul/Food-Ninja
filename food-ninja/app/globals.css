@@ -80,6 +80,23 @@ body {
   color: #172033;
 }
 
+/* Preserve crisp white text on colored buttons and active badges */
+.light-app button.bg-primary,
+.light-app button.bg-amber-500,
+.light-app button.bg-amber-600,
+.light-app button.bg-slate-900,
+.light-app button.bg-emerald-500,
+.light-app button.bg-rose-500,
+.light-app a.bg-amber-500,
+.light-app a.bg-amber-600,
+.light-app .bg-amber-500,
+.light-app .bg-amber-600,
+.light-app .text-primary-foreground,
+.light-app [class*="bg-amber-500"],
+.light-app [class*="bg-amber-600"] {
+  color: #ffffff !important;
+}
+
 .light-app .text-slate-300 { color: #475569; }
 .light-app .text-slate-400 { color: #64748b; }
 .light-app .text-slate-500 { color: #94a3b8; }

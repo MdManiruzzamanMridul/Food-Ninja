@@ -12,7 +12,9 @@
     "db:generate-files": "node --env-file=.env.local scripts/generate-db-files.mjs"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.22",
     "csv-parse": "^7.0.2",
+    "leaflet": "^1.9.4",
     "next": "16.3.0",
     "pg": "^8.23.0",
     "react": "19.2.8",

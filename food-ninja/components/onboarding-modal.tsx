@@ -1,132 +1,81 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, cn } from "@/components/ui";
+import { cn } from "@/components/ui";
 import { apiUpdateLocation, setOnboarded } from "@/lib/backend";
+import { OSMLocationPicker } from "./osm-location-picker";
 
-type OnboardingModalProps = {
-  open: boolean;
-  username: string;
-  userType: "user" | "admin" | "rider";
-  initialName?: string;
-  initialPhone?: string;
-  targetRedirect: string;
-  onComplete: (destination: string) => void;
+type AvatarOption = {
+  id: string;
+  name: string;
+  role: string;
+  initials: string;
+  badgeTone: string;
 };
 
-const AVATAR_OPTIONS = [
-  { id: "ninja-1", emoji: "🥷", label: "Shadow Chef", tone: "from-orange-500 to-amber-500" },
-  { id: "ninja-2", emoji: "🍕", label: "Pizza Samurai", tone: "from-red-500 to-orange-500" },
-  { id: "ninja-3", emoji: "🍜", label: "Noodle Master", tone: "from-amber-500 to-yellow-400" },
-  { id: "ninja-4", emoji: "🍔", label: "Burger Boss", tone: "from-yellow-500 to-amber-600" },
-  { id: "ninja-5", emoji: "🥗", label: "Clean Green", tone: "from-emerald-500 to-teal-400" },
-  { id: "ninja-6", emoji: "🍛", label: "Biryani Baron", tone: "from-orange-600 to-red-500" },
+const AVATAR_OPTIONS: AvatarOption[] = [
+  { id: "ninja-chef", name: "Chef Ronin", role: "Culinary Master", initials: "CR", badgeTone: "bg-amber-100 text-amber-800 border-amber-300" },
+  { id: "ninja-blade", name: "Courier Blade", role: "Swift Dispatch", initials: "CB", badgeTone: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  { id: "ninja-shadow", name: "Night Owl", role: "Midnight Foodie", initials: "NO", badgeTone: "bg-purple-100 text-purple-800 border-purple-300" },
+  { id: "ninja-sensei", name: "Speed Sensei", role: "Express Taster", initials: "SS", badgeTone: "bg-sky-100 text-sky-800 border-sky-300" },
+  { id: "ninja-dragon", name: "Dragon Flame", role: "Spice Explorer", initials: "DF", badgeTone: "bg-rose-100 text-rose-800 border-rose-300" },
+  { id: "ninja-master", name: "Street Sensei", role: "Dhaka Local", initials: "SL", badgeTone: "bg-amber-100 text-amber-800 border-amber-300" },
 ];
 
-const CUISINE_TAGS = [
-  "Biryani",
-  "Burgers",
-  "Pizza",
-  "Rice Bowls",
-  "Asian Street Food",
-  "Desserts & Bakery",
-  "Healthy & Salads",
+const CUISINE_OPTIONS = [
+  "Dhaka Biryani",
+  "Street Kebab",
+  "Artisan Burgers",
+  "Neapolitan Pizza",
+  "Pan-Asian & Dimsum",
+  "Traditional Bengali",
+  "Japanese Ramen",
   "Specialty Coffee",
-];
-
-const DHAKA_PRESETS = [
-  { name: "Gulshan 2", lat: 23.7925, lng: 90.4078 },
-  { name: "Banani", lat: 23.7937, lng: 90.4066 },
-  { name: "Dhanmondi", lat: 23.7461, lng: 90.3742 },
-  { name: "Uttara Sector 3", lat: 23.8759, lng: 90.3795 },
-  { name: "Mirpur 10", lat: 23.8069, lng: 90.3687 },
-  { name: "Mohakhali DOHS", lat: 23.7785, lng: 90.4072 },
-  { name: "Badda / Rampura", lat: 23.7806, lng: 90.4267 },
-  { name: "Bashundhara R/A", lat: 23.8151, lng: 90.4255 },
+  "Craft Desserts",
 ];
 
 export function OnboardingModal({
   open,
   username,
-  userType,
-  initialName = "",
+  userType = "user",
   initialPhone = "",
-  targetRedirect,
+  targetRedirect = "/home",
   onComplete,
-}: OnboardingModalProps) {
+}: {
+  open: boolean;
+  username: string;
+  userType?: string;
+  initialPhone?: string;
+  targetRedirect?: string;
+  onComplete: (destination: string) => void;
+}) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1 State: Avatar & Cuisines
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_OPTIONS[0].id);
-  const [selectedCuisines, setSelectedCuisines] = useState<string[]>(["Biryani", "Burgers"]);
+  // Step 1: Profile & Cuisines
+  const [selectedAvatar, setSelectedAvatar] = useState("ninja-chef");
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>(["Dhaka Biryani", "Artisan Burgers"]);
 
-  // Step 2 State: Database Info (Legal Name, NID, Phone)
-  const [legalName, setLegalName] = useState(initialName);
+  // Step 2: Missing Database Information
+  const [legalName, setLegalName] = useState(username ? username.charAt(0).toUpperCase() + username.slice(1) : "");
   const [nidNumber, setNidNumber] = useState("");
-  const [phone, setPhone] = useState(initialPhone);
+  const [phone, setPhone] = useState(initialPhone || "");
 
-  // Step 3 State: Map Location
-  const [latitude, setLatitude] = useState(23.7925); // Default: Gulshan, Dhaka
+  // Step 3: Location / Map Coordinates
+  const [latitude, setLatitude] = useState(23.7925);
   const [longitude, setLongitude] = useState(90.4078);
-  const [selectedAreaName, setSelectedAreaName] = useState("Gulshan 2");
-  const [isLocating, setIsLocating] = useState(false);
+  const [selectedAreaName, setSelectedAreaName] = useState("Gulshan 2, Dhaka");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   if (!open) return null;
 
-  function toggleCuisine(tag: string) {
+  function toggleCuisine(c: string) {
     setSelectedCuisines((prev) =>
-      prev.includes(tag) ? prev.filter((c) => c !== tag) : [...prev, tag]
+      prev.includes(c) ? prev.filter((item) => item !== c) : [...prev, c]
     );
-  }
-
-  function handleLiveLocation() {
-    if (!navigator.geolocation) {
-      setErrorMessage("Geolocation is not supported by your browser");
-      return;
-    }
-
-    setIsLocating(true);
-    setErrorMessage("");
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = Number(pos.coords.latitude.toFixed(6));
-        const lng = Number(pos.coords.longitude.toFixed(6));
-        setLatitude(lat);
-        setLongitude(lng);
-        setSelectedAreaName("GPS Live Location");
-        setIsLocating(false);
-      },
-      (err) => {
-        setErrorMessage("Unable to retrieve live location. Pick a preset or click on the map.");
-        setIsLocating(false);
-      },
-      { timeout: 8000, enableHighAccuracy: true }
-    );
-  }
-
-  function handleMapClick(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width; // 0 to 1
-    const y = (e.clientY - rect.top) / rect.height; // 0 to 1
-
-    // Interpolate around Dhaka bounding box approx
-    // Lat: 23.88 (North) to 23.70 (South)
-    // Lng: 90.34 (West) to 90.45 (East)
-    const lat = Number((23.88 - y * (23.88 - 23.70)).toFixed(6));
-    const lng = Number((90.34 + x * (90.45 - 90.34)).toFixed(6));
-
-    setLatitude(lat);
-    setLongitude(lng);
-    setSelectedAreaName("Custom Pinned Point");
   }
 
   async function handleFinalSubmit() {
     setIsSubmitting(true);
-    setErrorMessage("");
-
     try {
       // 1. Send location update to backend PostGIS endpoint
       await apiUpdateLocation({ latitude, longitude });
@@ -146,8 +95,7 @@ export function OnboardingModal({
 
       // 3. Navigate to target dashboard
       onComplete(targetRedirect);
-    } catch (err) {
-      // Even if backend has connection error, persist locally and proceed gracefully
+    } catch {
       setOnboarded(username, {
         avatar: selectedAvatar,
         cuisines: selectedCuisines,
@@ -167,275 +115,259 @@ export function OnboardingModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 sm:p-6 backdrop-blur-sm animate-fadeIn">
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/15 bg-slate-900 text-white shadow-[0_25px_100px_-20px_rgba(0,0,0,0.8)] transition-all"
+        className="relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden rounded-[28px] border border-black/10 bg-white text-slate-900 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Animated Progress Bar */}
-        <div className="relative h-2 w-full bg-white/5">
-          <div
-            className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-400 transition-all duration-500 ease-out"
-            style={{ width: `${(currentStep / 3) * 100}%` }}
-          />
-        </div>
-
-        <div className="p-7 sm:p-9">
-          {/* Header Step Track */}
-          <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold">
-                {currentStep === 1 ? "1" : currentStep === 2 ? "2" : "3"}
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-orange-400">
-                  {currentStep === 1
-                    ? "Step 1 of 3 • Persona & Avatar"
-                    : currentStep === 2
-                      ? "Step 2 of 3 • Database Verification"
-                      : "Step 3 of 3 • Exact Map Location"}
-                </p>
-                <h3 className="text-xl font-bold tracking-tight text-white">
-                  {currentStep === 1
-                    ? "Create your Foodie Profile"
-                    : currentStep === 2
-                      ? "Verify Your Account Details"
-                      : "Pin Your Location on the Map"}
-                </h3>
-              </div>
+        {/* Step Progress Top Bar */}
+        <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-700">
+                First-Time Setup
+              </span>
+              <span className="h-1 w-1 rounded-full bg-slate-300" />
+              <span className="text-[10px] uppercase tracking-wider text-slate-600 font-semibold">
+                {currentStep === 1 ? "01 Identity" : currentStep === 2 ? "02 Verification" : "03 Realtime Map"}
+              </span>
             </div>
-
-            <Badge tone="primary">First-Time Setup</Badge>
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+              Stage {currentStep} of 3
+            </span>
           </div>
 
-          {/* STEP 1: Avatar & Cuisines */}
+          {/* Segmented Step Indicator */}
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[1, 2, 3].map((step) => (
+              <div
+                key={step}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  step <= currentStep ? "bg-amber-500 shadow-sm" : "bg-slate-200"
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable Modal Body */}
+        <div className="overflow-y-auto p-6 sm:p-8 space-y-6">
+          {/* STEP 1: Persona & Avatar */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fadeIn">
               <div>
-                <label className="text-sm font-medium text-slate-300">Choose your Food Ninja Avatar</label>
-                <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
-                  {AVATAR_OPTIONS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedAvatar(item.id)}
-                      className={cn(
-                        "group flex flex-col items-center justify-center rounded-2xl border p-3 text-center transition",
-                        selectedAvatar === item.id
-                          ? "border-orange-500 bg-orange-500/20 shadow-lg shadow-orange-500/10"
-                          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
-                      )}
-                    >
-                      <span className="text-3xl transition group-hover:scale-110">{item.emoji}</span>
-                      <span className="mt-2 text-[11px] font-medium text-slate-300 line-clamp-1">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                  Select Profile Avatar & Cuisines
+                </h3>
+                <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                  Personalize your avatar badge and cuisine preferences for custom dish recommendations.
+                </p>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-slate-300">Select Cuisines You Love</label>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {CUISINE_TAGS.map((tag) => {
-                    const isSelected = selectedCuisines.includes(tag);
+              {/* Avatar Grid */}
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Choose Persona
+                </span>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {AVATAR_OPTIONS.map((item) => {
+                    const isSelected = selectedAvatar === item.id;
                     return (
                       <button
-                        key={tag}
+                        key={item.id}
                         type="button"
-                        onClick={() => toggleCuisine(tag)}
+                        onClick={() => setSelectedAvatar(item.id)}
                         className={cn(
-                          "rounded-xl border px-3.5 py-1.5 text-xs font-medium transition",
+                          "group relative flex items-center gap-3 rounded-2xl border p-3.5 text-left transition-all duration-150",
                           isSelected
-                            ? "border-amber-400 bg-amber-500/20 text-amber-300 shadow-sm shadow-amber-500/10"
-                            : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white"
+                            ? "border-amber-500 bg-amber-50/70 shadow-sm ring-2 ring-amber-500/20"
+                            : "border-slate-200 bg-slate-50/80 hover:border-slate-300 hover:bg-slate-100/70"
                         )}
                       >
-                        {isSelected ? "✓ " : "+ "}
-                        {tag}
+                        <div
+                          className={cn(
+                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-transform group-hover:scale-105",
+                            item.badgeTone
+                          )}
+                        >
+                          {item.initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-bold text-slate-900">
+                            {item.name}
+                          </p>
+                          <p className="truncate text-[10px] text-slate-500 font-medium">
+                            {item.role}
+                          </p>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4">
+              {/* Cuisines Tag Cloud */}
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Favorite Dhaka Flavors
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {CUISINE_OPTIONS.map((cuisine) => {
+                    const active = selectedCuisines.includes(cuisine);
+                    return (
+                      <button
+                        key={cuisine}
+                        type="button"
+                        onClick={() => toggleCuisine(cuisine)}
+                        className={cn(
+                          "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-150",
+                          active
+                            ? "border-amber-500 bg-amber-500 text-white font-semibold shadow-sm"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                        )}
+                      >
+                        {active ? "✓ " : "+ "}
+                        {cuisine}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex justify-end border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-orange-500/25 transition hover:bg-orange-600"
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-md shadow-amber-500/25"
                 >
-                  Continue to Step 2 ➔
+                  <span>Continue to Verification</span>
+                  <span>→</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 2: Database Account Details (NID, Name, Phone) */}
+          {/* STEP 2: Database Account Details */}
           {currentStep === 2 && (
-            <div className="space-y-4 animate-fadeIn">
-              <p className="text-xs text-slate-400">
-                These required fields complete your record in the database for identity verification and order processing.
-              </p>
+            <div className="space-y-5 animate-fadeIn">
+              <div>
+                <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                  Account Verification & Profile Details
+                </h3>
+                <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+                  Provide your primary contact and identification number for official order dispatch & rider coordination.
+                </p>
+              </div>
 
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>Full Legal Name *</span>
-                <input
-                  value={legalName}
-                  onChange={(e) => setLegalName(e.target.value)}
-                  placeholder="e.g. Tanvir Ahmed"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-              </label>
+              <div className="space-y-4">
+                {/* Legal Name */}
+                <label className="block space-y-1.5 text-xs text-slate-700 font-medium">
+                  <div className="flex items-center justify-between">
+                    <span>Full Legal Name *</span>
+                    <span className="text-[10px] text-slate-400">Database: `users.name`</span>
+                  </div>
+                  <input
+                    value={legalName}
+                    onChange={(e) => setLegalName(e.target.value)}
+                    placeholder="e.g. Tanvir Ahmed"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                    required
+                  />
+                </label>
 
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>National ID / NID Number *</span>
-                <input
-                  value={nidNumber}
-                  onChange={(e) => setNidNumber(e.target.value)}
-                  placeholder="e.g. 19942692500000123"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-                <span className="text-[10px] text-slate-500">Stored in the database for user identity and verification.</span>
-              </label>
+                {/* NID */}
+                <label className="block space-y-1.5 text-xs text-slate-700 font-medium">
+                  <div className="flex items-center justify-between">
+                    <span>National ID / NID Number *</span>
+                    <span className="text-[10px] text-slate-400">Identity Verification</span>
+                  </div>
+                  <input
+                    value={nidNumber}
+                    onChange={(e) => setNidNumber(e.target.value)}
+                    placeholder="e.g. 19942692500000123"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 font-mono"
+                    required
+                  />
+                  <span className="text-[10px] text-slate-500">Stored for customer identity and order verification.</span>
+                </label>
 
-              <label className="block space-y-1.5 text-xs text-slate-300">
-                <span>Primary Contact Phone *</span>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 01700000000"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                  required
-                />
-              </label>
+                {/* Primary Contact Phone */}
+                <label className="block space-y-1.5 text-xs text-slate-700 font-medium">
+                  <div className="flex items-center justify-between">
+                    <span>Primary Contact Phone *</span>
+                    <span className="text-[10px] text-slate-400">Database: `users.phone`</span>
+                  </div>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g. 01712345678"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 font-mono"
+                    required
+                  />
+                  <span className="text-[10px] text-slate-500">Riders and restaurants will use this number for delivery coordination.</span>
+                </label>
+              </div>
 
-              <div className="flex items-center justify-between pt-4">
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-white/10"
+                  className="rounded-full border border-slate-200 bg-slate-100 px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
-                  ← Back
+                  ← Back to Avatar
                 </button>
                 <button
                   type="button"
                   onClick={() => setCurrentStep(3)}
-                  className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-orange-500/25 transition hover:bg-orange-600"
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-md shadow-amber-500/25"
                 >
-                  Proceed to Location Map ➔
+                  <span>Continue to Realtime Map</span>
+                  <span>→</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: Interactive Map Location Pin Picker */}
+          {/* STEP 3: Realtime OpenStreetMap Location Picker */}
           {currentStep === 3 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs text-slate-300">
-                  Select your current location in Dhaka. Click the map, pick a hub preset, or use your live GPS:
-                </p>
-                <button
-                  type="button"
-                  onClick={handleLiveLocation}
-                  disabled={isLocating}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-orange-400/40 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-300 transition hover:bg-orange-500/20 disabled:opacity-50"
-                >
-                  <span>📍</span>
-                  <span>{isLocating ? "Acquiring GPS..." : "Use My Live Location"}</span>
-                </button>
-              </div>
-
-              {/* Interactive Visual Map Grid */}
-              <div
-                onClick={handleMapClick}
-                className="relative h-48 sm:h-56 cursor-crosshair overflow-hidden rounded-2xl border border-white/15 bg-[#0b1220] transition hover:border-orange-500/40"
-              >
-                {/* Visual Map Grid Lines */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:32px_32px]" />
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/15 via-sky-500/10 to-transparent" />
-
-                {/* Animated Dhaka Road Network SVG Graphic */}
-                <svg className="absolute inset-0 h-full w-full opacity-40" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <path d="M 20 0 L 35 45 L 60 70 L 90 100" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" />
-                  <path d="M 0 50 Q 40 40, 80 55 T 100 65" fill="none" stroke="rgba(249,115,22,0.4)" strokeWidth="1.5" strokeDasharray="3 2" />
-                  <path d="M 50 0 L 50 100" fill="none" stroke="rgba(56,189,248,0.3)" strokeWidth="1.0" />
-                </svg>
-
-                {/* Active Pin Target Indicator */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="relative flex items-center justify-center">
-                    <div className="h-6 w-6 rounded-full border-2 border-white bg-orange-500 shadow-[0_0_0_8px_rgba(249,115,22,0.3)] animate-pulse" />
-                    <span className="absolute -top-7 whitespace-nowrap rounded-lg bg-slate-950/90 border border-white/20 px-2 py-0.5 text-[10px] font-bold text-orange-300">
-                      📍 {selectedAreaName}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-2 left-2 rounded-xl bg-slate-950/80 border border-white/10 px-3 py-1 text-[10px] text-slate-400 backdrop-blur">
-                  Click anywhere on the map to place pin
-                </div>
-              </div>
-
-              {/* Major Dhaka Presets */}
+            <div className="space-y-5 animate-fadeIn">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Dhaka Hub Presets:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {DHAKA_PRESETS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => {
-                        setLatitude(preset.lat);
-                        setLongitude(preset.lng);
-                        setSelectedAreaName(preset.name);
-                      }}
-                      className={cn(
-                        "rounded-lg border px-2.5 py-1 text-[11px] transition",
-                        selectedAreaName === preset.name
-                          ? "border-orange-400 bg-orange-500/20 text-orange-200 font-semibold"
-                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white"
-                      )}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
+                <h3 className="text-2xl font-bold tracking-tight text-slate-900">
+                  Select Delivery Pin on OpenStreetMap
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  Drag the custom pin or click anywhere on the realtime OpenStreetMap street grid to set your delivery coordinates.
+                </p>
               </div>
 
-              {/* Coordinates Info Bar */}
-              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs">
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Latitude:</span>
-                  <span className="font-mono font-medium text-white">{latitude.toFixed(6)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 text-[10px] block">Longitude:</span>
-                  <span className="font-mono font-medium text-white">{longitude.toFixed(6)}</span>
-                </div>
-              </div>
+              {/* Realtime OSM Location Picker Component */}
+              <OSMLocationPicker
+                initialLat={latitude}
+                initialLng={longitude}
+                onLocationChange={(lat, lng, address) => {
+                  setLatitude(lat);
+                  setLongitude(lng);
+                  if (address) setSelectedAreaName(address);
+                }}
+              />
 
-              {errorMessage && (
-                <p className="text-xs text-red-400">{errorMessage}</p>
-              )}
-
-              <div className="flex items-center justify-between pt-4">
+              {/* Actions */}
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(2)}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-xs font-medium text-slate-300 transition hover:bg-white/10"
+                  className="rounded-full border border-slate-200 bg-slate-100 px-5 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
-                  ← Back
+                  ← Back to Details
                 </button>
                 <button
                   type="button"
                   onClick={handleFinalSubmit}
                   disabled={isSubmitting}
-                  className="rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-orange-500/25 transition hover:bg-orange-600 disabled:cursor-wait disabled:opacity-70"
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-7 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-lg shadow-amber-500/25 disabled:cursor-wait disabled:opacity-70"
                 >
-                  {isSubmitting ? "Saving to Database..." : "Confirm & Enter Food Ninja ➔"}
+                  <span>{isSubmitting ? "Saving Coordinates..." : "Save Location & Launch ➔"}</span>
                 </button>
               </div>
             </div>

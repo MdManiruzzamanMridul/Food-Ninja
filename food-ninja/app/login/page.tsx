@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
 import { Panel, Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
-import { apiLogin, isOnboarded } from "@/lib/backend";
+import { apiLogin, isOnboarded, setAuthSession } from "@/lib/backend";
 import { OnboardingModal } from "@/components/onboarding-modal";
 
 const roles = [
   { id: "user", label: "Customer", hint: "Browse and order food", redirect: "/home" },
-  { id: "admin", label: "Admin", hint: "Platform management", redirect: "/admin/dashboard" },
-  { id: "rider", label: "Rider", hint: "Deliveries and tracking", redirect: "/rider/dashboard" },
+  { id: "owner", label: "Restaurant Owner", hint: "Manage kitchen and food menus", redirect: "/owner/dashboard" },
+  { id: "rider", label: "Delivery Rider", hint: "Deliveries and live tracking", redirect: "/rider/dashboard" },
+  { id: "admin", label: "Platform Admin", hint: "Platform operations & metrics", redirect: "/admin/dashboard" },
 ] as const;
 
 type RoleType = (typeof roles)[number]["id"];
@@ -52,17 +53,31 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Backend expects user_info (email, phone, or username) + password + user_type
+      // For backend login:
+      // "admin" -> queries admin table
+      // "rider" -> queries rider table
+      // "user" / "owner" -> queries users table
+      const backendUserType = selectedRole === "admin" ? "admin" : selectedRole === "rider" ? "rider" : "user";
+
       const payload = {
-        user_type: selectedRole as "user" | "admin",
+        user_type: backendUserType,
         user_info: userInfo.trim(),
         password,
-      } as const;
+      };
 
       const result = await apiLogin(payload as any);
       const activeUsername = result.username || userInfo.trim();
 
-      toast(`Successfully logged in as ${selectedRole.toUpperCase()}!`, "success");
+      // Ensure local session stores the selected role (e.g. owner)
+      if (result.token) {
+        setAuthSession(result.token, {
+          username: activeUsername,
+          user_type: selectedRole as any,
+          email: userInfo.includes("@") ? userInfo.trim() : undefined,
+        });
+      }
+
+      toast(`Successfully logged in as ${roles.find((r) => r.id === selectedRole)?.label}!`, "success");
 
       const matchedRole = roles.find((r) => r.id === selectedRole);
       const targetPath = matchedRole ? matchedRole.redirect : "/home";
@@ -99,36 +114,40 @@ export default function LoginPage() {
         <AuthChrome
           nav={[
             { href: "/login", label: "Login" },
-            { href: "/register", label: "Register Customer" },
-            { href: "/register/partner", label: "Register Admin / Partner" },
+            { href: "/register", label: "Register" },
           ]}
         >
           <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.9fr_1.1fr]">
             <Panel className="flex flex-col justify-between p-8">
               <div className="space-y-5">
-                <Badge tone="primary">Unified login portal</Badge>
+                <Badge tone="primary">Unified sign-in portal</Badge>
                 <h1 className="text-4xl font-semibold tracking-tight text-white">Sign in to Food Ninja</h1>
                 <p className="text-sm leading-6 text-slate-400">
-                  Authenticate directly against the PostgreSQL backend database using role-specific credentials.
+                  Authenticate directly against the PostgreSQL backend database with your role-specific credentials.
                 </p>
               </div>
 
               <div className="mt-8 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Select Role</p>
-                <div className="grid gap-3">
+                <div className="grid gap-2.5">
                   {roles.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => setSelectedRole(item.id)}
                       className={cn(
-                        "rounded-2xl border p-4 text-left text-sm transition",
+                        "rounded-2xl border p-3.5 text-left text-sm transition",
                         selectedRole === item.id
                           ? "border-orange-400/40 bg-orange-500/15 text-white"
                           : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                       )}
                     >
-                      <span className="block font-medium">{item.label} Login</span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">{item.label}</span>
+                        <span className="text-xs font-mono text-orange-400">
+                          {selectedRole === item.id ? "✓ Active" : "Select"}
+                        </span>
+                      </div>
                       <span className="text-xs text-slate-400">{item.hint}</span>
                     </button>
                   ))}
@@ -188,19 +207,15 @@ export default function LoginPage() {
 
                 <div className="pt-2 text-xs text-slate-400 space-y-1">
                   <p>
-                    Redirect destination:{" "}
+                    Destination:{" "}
                     <code className="text-orange-300 font-mono">
                       {roles.find((r) => r.id === selectedRole)?.redirect}
                     </code>
                   </p>
                   <p>
                     Don't have an account?{" "}
-                    <Link href="/register" className="text-orange-300 hover:underline">
-                      Register Customer
-                    </Link>{" "}
-                    |{" "}
-                    <Link href="/register/partner" className="text-orange-300 hover:underline">
-                      Register Admin
+                    <Link href="/register" className="text-orange-300 font-medium hover:underline">
+                      Create an account
                     </Link>
                   </p>
                 </div>
@@ -226,4 +241,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

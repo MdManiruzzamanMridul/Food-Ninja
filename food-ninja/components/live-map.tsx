@@ -1,44 +1,98 @@
-import { cn } from "./ui";
+"use client";
+
+import { useEffect, useRef } from "react";
+import "leaflet/dist/leaflet.css";
 
 export function LiveMap({
   title,
   subtitle,
-  accent = "orange",
+  center = [23.7925, 90.4078],
+  zoom = 13,
 }: {
   title: string;
   subtitle: string;
+  center?: [number, number];
+  zoom?: number;
   accent?: "orange" | "emerald" | "sky";
 }) {
-  const accentClass =
-    accent === "emerald"
-      ? "from-emerald-500/25 via-emerald-400/10 to-transparent"
-      : accent === "sky"
-        ? "from-sky-500/25 via-sky-400/10 to-transparent"
-        : "from-orange-500/25 via-orange-400/10 to-transparent";
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function init() {
+      if (!containerRef.current || mapRef.current) return;
+
+      const L = (await import("leaflet")).default;
+
+      if (!isMounted || !containerRef.current || mapRef.current) return;
+      if ((containerRef.current as any)._leaflet_id) return;
+
+      const map = L.map(containerRef.current, {
+        center: center,
+        zoom: zoom,
+        zoomControl: true,
+        scrollWheelZoom: false,
+      });
+
+      if (!isMounted) {
+        map.remove();
+        return;
+      }
+
+      mapRef.current = map;
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Pulse pin for current center
+      const pinIcon = L.divIcon({
+        className: "live-map-pin",
+        html: `
+          <div style="position: relative; width: 24px; height: 24px; transform: translate(-50%, -50%);">
+            <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: rgba(245, 158, 11, 0.4); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 24px; height: 24px; border-radius: 9999px; background: #f59e0b; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>
+          </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12],
+      });
+
+      L.marker(center, { icon: pinIcon }).addTo(map);
+    }
+
+    init();
+
+    return () => {
+      isMounted = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      if (containerRef.current && (containerRef.current as any)._leaflet_id) {
+        (containerRef.current as any)._leaflet_id = null;
+      }
+    };
+  }, [center, zoom]);
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[#0a1020]">
-      <div className="border-b border-white/10 px-5 py-4">
-        <p className="text-sm font-medium text-white">{title}</p>
-        <p className="mt-1 text-xs uppercase tracking-[0.26em] text-slate-400">{subtitle}</p>
+    <div className="overflow-hidden rounded-[28px] border border-black/10 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 bg-slate-50/80">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-0.5 text-xs text-slate-500 uppercase tracking-wider">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-medium text-slate-600">OpenStreetMap Live</span>
+        </div>
       </div>
-      <div className="relative h-[340px] bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:44px_44px]">
-        <div className={cn("absolute inset-0 bg-gradient-to-br", accentClass)} />
-        <div className="absolute left-[12%] top-[22%] h-4 w-4 rounded-full border-4 border-white bg-orange-500 shadow-[0_0_0_12px_rgba(249,115,22,0.18)]" />
-        <div className="absolute left-[68%] top-[26%] h-4 w-4 rounded-full border-4 border-white bg-emerald-400 shadow-[0_0_0_12px_rgba(34,197,94,0.18)]" />
-        <div className="absolute left-[42%] top-[60%] h-4 w-4 rounded-full border-4 border-white bg-sky-400 shadow-[0_0_0_12px_rgba(56,189,248,0.18)]" />
-        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M 16 22 C 28 20, 36 30, 43 40 S 59 60, 69 28" fill="none" stroke="rgba(249,115,22,0.9)" strokeWidth="1.4" strokeDasharray="4 2" />
-          <path d="M 42 61 C 48 58, 58 48, 68 29" fill="none" stroke="rgba(56,189,248,0.7)" strokeWidth="1.1" strokeDasharray="3 2" />
-        </svg>
-        <div className="absolute bottom-5 left-5 rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Realtime position</p>
-          <p className="mt-1 text-sm text-white">GPS lock stable • refreshed now</p>
-        </div>
-        <div className="absolute right-5 top-5 rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">ETA</p>
-          <p className="mt-1 text-xl font-semibold text-white">6 min</p>
-        </div>
+      <div className="relative h-[320px] w-full bg-slate-100">
+        <div ref={containerRef} className="h-full w-full z-0" />
       </div>
     </div>
   );
