@@ -29,7 +29,7 @@ def update_location():
             "message": "insufficient location info"
         }), 400
 
-    result = utils.updateLocation(user_type, username, latitude, longitude)
+    result = utils.updateLocation(user_type, username, longitude, latitude)
     if result == "success":
         return jsonify({
             "success": True,
