@@ -23,4 +23,17 @@ UPDATE admin
 SET email = %s
 WHERE username = %s
 
+--name:update_user_phone
+UPDATE users
+SET phone = %s
+WHERE username = %s
 
+--name:update_rider_phone
+UPDATE rider
+SET phone = %s
+WHERE username = %s
+
+--name:update_admin_phone
+UPDATE admin
+SET phone = %s
+WHERE username = %s
