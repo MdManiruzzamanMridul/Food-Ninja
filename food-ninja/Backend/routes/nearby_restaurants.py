@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
 import auth
-from utils import getNearbyRestaurents, is_valid_food_cat
-nearby_restaurents_bp = Blueprint("nearby_restaurents", __name__)
+from utils import getNearbyRestaurants, is_valid_food_cat
+nearby_restaurants_bp = Blueprint("nearby_restaurants", __name__)
 
 
-@nearby_restaurents_bp.route("/nearby_restaurents", methods=["GET"])
-def get_nearby_restaurents():
+@nearby_restaurants_bp.route("/nearby_restaurants", methods=["GET"])
+def get_nearby_restaurants():
     payload = auth.get_user_info()
     
     if payload is None:
@@ -28,7 +28,7 @@ def get_nearby_restaurents():
             }), 400
 
     # under 5km path , under 120min delivery
-    result = getNearbyRestaurents(username, food_category)
+    result = getNearbyRestaurants(username, food_category)
 
     if(result == "user not found"):
         return jsonify({
@@ -45,6 +45,6 @@ def get_nearby_restaurents():
 
     return jsonify({
         "success": True,
-        "restaurents": result,
+        "restaurants": result,
         "message": "ok"
     }), 200

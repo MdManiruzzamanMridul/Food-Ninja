@@ -7,7 +7,7 @@ from routes.login import login_bp
 from routes.update_location import update_location_bp
 from routes.update_email import update_email_bp
 from routes.update_phone import update_phone_bp
-from routes.nearby_restaurents import nearby_restaurents_bp
+from routes.nearby_restaurants import nearby_restaurents_bp
 from routes.orders import orders_bp
 
 
