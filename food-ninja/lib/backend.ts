@@ -10,26 +10,16 @@ export type BackendResponse<T> = {
 
 export type AuthUser = {
   username: string;
-  user_type: "user" | "admin";
+  user_type: "user" | "admin" | "rider";
   email?: string;
+  name?: string;
 };
 
-export type UserLoginPayload = {
-  user_type: "user";
-  email: string;
-  phone: string;
+export type LoginPayload = {
+  user_type: "user" | "admin" | "rider";
+  user_info: string;
   password: string;
 };
-
-export type AdminLoginPayload = {
-  user_type: "admin";
-  username: string;
-  email: string;
-  phone: string;
-  password: string;
-};
-
-export type LoginPayload = UserLoginPayload | AdminLoginPayload;
 
 export type UserRegisterPayload = {
   user_type: "user";
@@ -40,6 +30,16 @@ export type UserRegisterPayload = {
   password: string;
 };
 
+export type RiderRegisterPayload = {
+  user_type: "rider";
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  vehicle: "bike" | "bicycle";
+};
+
 export type AdminRegisterPayload = {
   user_type: "admin";
   username: string;
@@ -48,19 +48,24 @@ export type AdminRegisterPayload = {
   password: string;
 };
 
-export type RegisterPayload = UserRegisterPayload | AdminRegisterPayload;
+export type RegisterPayload = UserRegisterPayload | RiderRegisterPayload | AdminRegisterPayload;
 
 export type LoginResponse = {
   success: boolean;
   token?: string;
   username?: string;
-  user_type?: "user" | "admin";
+  user_type?: "user" | "admin" | "rider";
   message?: string;
 };
 
 export type RegisterResponse = {
   success: boolean;
   message?: string;
+};
+
+export type UpdateResponse = {
+  success: boolean;
+  message: string;
 };
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
@@ -111,13 +116,32 @@ export async function apiLogin(payload: LoginPayload): Promise<LoginResponse> {
 
   if (data.token) {
     setAuthSession(data.token, {
-      username: data.username || (payload.user_type === "admin" ? payload.username : payload.email),
+      username: data.username || payload.user_info,
       user_type: data.user_type || payload.user_type,
-      email: payload.email,
     });
   }
 
   return data;
+}
+
+export async function apiLogout(): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      await fetch(`${BACKEND_URL}/logout`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    } catch {
+      // If server is unreachable, continue clearing client session
+    }
+  }
+
+  clearAuthSession();
+  return { success: true, message: "Logged out successfully" };
 }
 
 export async function apiRegister(payload: RegisterPayload): Promise<RegisterResponse> {
@@ -132,6 +156,84 @@ export async function apiRegister(payload: RegisterPayload): Promise<RegisterRes
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.message || "Failed to register");
+  }
+
+  return data;
+}
+
+export async function apiUpdateEmail(newEmail: string, password: string): Promise<UpdateResponse> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+
+  const res = await fetch(`${BACKEND_URL}/users/me/email`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      new_email: newEmail,
+      password: password,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to update email");
+  }
+
+  return data;
+}
+
+export async function apiUpdatePhone(newPhone: string, password: string): Promise<UpdateResponse> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+
+  const res = await fetch(`${BACKEND_URL}/users/me/phone`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      new_phone: newPhone,
+      password: password,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to update phone number");
+  }
+
+  return data;
+}
+
+export async function apiChangePassword(oldPassword: string, newPassword: string): Promise<UpdateResponse> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("Authentication required. Please log in.");
+  }
+
+  const res = await fetch(`${BACKEND_URL}/users/me/password`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      old_password: oldPassword,
+      new_password: newPassword,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to change password");
   }
 
   return data;

@@ -4,10 +4,12 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 from routes.login import login_bp
+from routes.logout import logout_bp
 from routes.update_location import update_location_bp
 from routes.update_email import update_email_bp
 from routes.update_phone import update_phone_bp
-from routes.nearby_restaurants import nearby_restaurents_bp
+from routes.change_password import change_password_bp
+from routes.nearby_restaurants import nearby_restaurants_bp
 from routes.orders import orders_bp
 
 
@@ -20,12 +22,13 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Register blueprints
 app.register_blueprint(login_bp)
+app.register_blueprint(logout_bp)
 app.register_blueprint(update_location_bp)
 app.register_blueprint(update_email_bp)
 app.register_blueprint(update_phone_bp)
-app.register_blueprint(nearby_restaurents_bp)
+app.register_blueprint(change_password_bp)
+app.register_blueprint(nearby_restaurants_bp)
 app.register_blueprint(orders_bp)
-
 
 
 @app.route("/", methods=["GET"])

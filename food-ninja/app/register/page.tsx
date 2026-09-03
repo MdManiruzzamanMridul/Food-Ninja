@@ -23,7 +23,10 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
-    const finalUsername = username.trim() || email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "") || name.replace(/\s+/g, "").toLowerCase();
+    const finalUsername =
+      username.trim().toLowerCase() ||
+      email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() ||
+      name.replace(/\s+/g, "").toLowerCase();
 
     if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !finalUsername) {
       toast("Please fill in all required fields (Name, Username, Phone, Email, Password)", "warning");
@@ -33,21 +36,22 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await apiRegister({
+        user_type: "user",
         name: name.trim(),
         username: finalUsername,
         email: email.trim(),
         phone: phone.trim(),
         password: password.trim(),
-        user_type: "user",
       });
 
-      toast("Customer account created successfully! Redirecting to login...", "success");
+      toast("Customer account registered successfully! Redirecting to login...", "success");
 
       setTimeout(() => {
         router.push("/login");
       }, 1000);
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to create account", "danger");
+      const errorMsg = err instanceof Error ? err.message : "Failed to create account";
+      toast(errorMsg, "danger");
     } finally {
       setLoading(false);
     }
@@ -59,8 +63,8 @@ export default function RegisterPage() {
         <AuthChrome
           nav={[
             { href: "/login", label: "Login" },
-            { href: "/register", label: "Register" },
-            { href: "/admin/dashboard", label: "Admin Portal" },
+            { href: "/register", label: "Register Customer" },
+            { href: "/register/partner", label: "Register Rider / Admin" },
           ]}
         >
           <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.95fr_1.05fr]">
@@ -68,7 +72,7 @@ export default function RegisterPage() {
               <Badge tone="primary">Customer registration</Badge>
               <h1 className="mt-5 text-4xl font-semibold tracking-tight">Create your customer profile.</h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-                Join Food Ninja to order food from your favorite restaurants across the city, track your deliveries in real-time, and earn rewards.
+                Join Food Ninja to order food from top restaurants, track your deliveries live, and access exclusive deals.
               </p>
               <div className="mt-8 grid gap-3 text-sm text-slate-300">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Saved addresses & instant checkout</div>
@@ -80,45 +84,45 @@ export default function RegisterPage() {
             <Panel className="p-8">
               <form onSubmit={handleRegister} className="grid gap-4">
                 <label className="space-y-2 text-sm text-slate-300">
-                  Full name *
+                  <span>Full name *</span>
                   <input
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
                       if (!username) {
-                        setUsername(e.target.value.replace(/\s+/g, "").toLowerCase());
+                        setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase());
                       }
                     }}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                    placeholder="Your full name"
+                    placeholder="e.g. Ava Johnson"
                     required
                   />
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-300">
-                  Username *
+                  <span>Username *</span>
                   <input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                    placeholder="Choose a unique username"
+                    placeholder="e.g. avajohnson"
                     required
                   />
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-300">
-                  Phone number *
+                  <span>Phone number *</span>
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                    placeholder="+880 1700 000000"
+                    placeholder="01700000000"
                     required
                   />
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-300">
-                  Email *
+                  <span>Email Address *</span>
                   <input
                     type="email"
                     value={email}
@@ -130,24 +134,24 @@ export default function RegisterPage() {
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-300">
-                  Password *
+                  <span>Password *</span>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                    placeholder="Create password"
+                    placeholder="••••••••"
                     required
                   />
                 </label>
 
                 <label className="space-y-2 text-sm text-slate-300">
-                  Default delivery address (optional)
+                  <span>Default delivery address (optional)</span>
                   <input
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
-                    placeholder="Home, street, city"
+                    placeholder="Home, street, area"
                   />
                 </label>
 
@@ -158,79 +162,28 @@ export default function RegisterPage() {
                     "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
                   )}
                 >
-                  {loading ? "Creating account..." : "Create account"}
+                  {loading ? "Registering..." : "Register Customer Account"}
                 </button>
               </form>
-              <p className="mt-5 text-sm text-slate-400">
-                Already registered?{" "}
-                <Link href="/login" className="text-orange-300 hover:underline">
-                  Sign in here
-                </Link>
-              </p>
+
+              <div className="mt-5 flex flex-col gap-1 text-sm text-slate-400">
+                <p>
+                  Already have an account?{" "}
+                  <Link href="/login" className="text-orange-300 hover:underline">
+                    Sign in here
+                  </Link>
+                </p>
+                <p>
+                  Want to register as a Delivery Rider or Admin?{" "}
+                  <Link href="/register/partner" className="text-orange-300 hover:underline">
+                    Rider & Admin Registration
+                  </Link>
+                </p>
+              </div>
             </Panel>
           </div>
         </AuthChrome>
       </div>
-
-      {/* Website Popup Modal for Successful DB Write */}
-      <Modal
-        open={Boolean(successData)}
-        title="Admin Registered Successfully!"
-        description="The admin data was transmitted to the local backend and inserted into the PostgreSQL database table."
-        onClose={() => setSuccessData(null)}
-      >
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-50 p-4 text-emerald-800">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-lg">
-              ✓
-            </div>
-            <div>
-              <p className="font-semibold text-emerald-900">{successData?.message}</p>
-              <p className="text-xs text-emerald-700 mt-0.5">PostgreSQL Table: <code>admin</code> (Status: pending)</p>
-            </div>
-          </div>
-
-          {successData?.data ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Registered Admin Details</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-slate-500 text-xs block">Username:</span>
-                  <span className="font-medium text-slate-900">{successData.data.username}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs block">Email:</span>
-                  <span className="font-medium text-slate-900">{successData.data.email}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs block">Phone:</span>
-                  <span className="font-medium text-slate-900">{successData.data.phone}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-xs block">Password:</span>
-                  <span className="font-medium text-slate-900">•••••••• (Encrypted in DB)</span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Link
-              href="/login"
-              className="rounded-full bg-orange-500 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-600"
-            >
-              Go to Login
-            </Link>
-            <button
-              type="button"
-              onClick={() => setSuccessData(null)}
-              className="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
     </main>
   );
 }

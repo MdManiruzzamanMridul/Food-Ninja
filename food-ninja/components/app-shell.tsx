@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { NavItem } from "@/lib/platform";
 import { cn, Panel } from "./ui";
+import { getAuthUser, apiLogout, type AuthUser } from "@/lib/backend";
+import { useToast } from "./toast-provider";
 
 export function AppShell({
   role,
@@ -22,8 +24,14 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -32,6 +40,16 @@ export function AppShell({
     }
 
     router.push("/");
+  }
+
+  async function handleLogout() {
+    try {
+      await apiLogout();
+      toast("Signed out successfully", "neutral");
+      router.push("/login");
+    } catch {
+      router.push("/login");
+    }
   }
 
   return (
@@ -61,7 +79,25 @@ export function AppShell({
                 <p className="text-sm uppercase tracking-[0.22em] text-amber-700">Food Ninja</p>
               </Link>
 
-              <div className="flex items-center justify-end gap-3">{actions}</div>
+              <div className="flex items-center justify-end gap-2">
+                {actions}
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-full border border-red-500/20 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-500/20"
+                  >
+                    Sign out
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20"
+                  >
+                    Sign in
+                  </Link>
+                )}
+              </div>
             </div>
 
             <nav className="mt-3 flex items-center gap-2 overflow-x-auto border-t border-black/5 pt-3">
@@ -126,10 +162,21 @@ export function AppShell({
                 </nav>
 
                 <Panel className="bg-amber-50 p-4">
-                  <p className="text-sm text-slate-700">Backend bridge</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Buttons in this UI call blank-payload placeholder requests. Replace the helper in <code className="rounded bg-white px-1.5 py-0.5">lib/backend.ts</code> with real API endpoints when the backend contract is ready.
+                  <p className="text-sm font-medium text-slate-800">
+                    {user ? `Logged in as: ${user.username}` : "Guest session"}
                   </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    {user ? `Role: ${user.user_type}` : "Sign in to access personalized orders and settings."}
+                  </p>
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="mt-3 w-full rounded-xl bg-red-500/10 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500/20"
+                    >
+                      Log out
+                    </button>
+                  )}
                 </Panel>
               </div>
             </aside>

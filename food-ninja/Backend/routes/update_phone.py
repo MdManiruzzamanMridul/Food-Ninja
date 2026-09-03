@@ -6,14 +6,14 @@ import auth
 update_phone_bp = Blueprint("update_phone", __name__)
 
 
-@update_phone_bp.route("/users/me/phone", methods=["PATCH"])
+@update_phone_bp.route("/users/me/phone", methods=["PATCH", "POST"])
 def update_phone():
     payload = auth.get_user_info()
 
     if payload is None:
         return jsonify({
             "success": False,
-            "message": "Invalid token"
+            "message": "Invalid or missing token"
         }), 401
 
     # Extract information from JWT
@@ -22,6 +22,21 @@ def update_phone():
 
     data = request.get_json() or {}
     new_phone = data.get("new_phone")
+    password = data.get("password")
+
+    # Password required to verify user identity
+    if not isinstance(password, str) or not password:
+        return jsonify({
+            "success": False,
+            "message": "Password is required"
+        }), 400
+
+    # Verify the user/admin/rider's password
+    if not utils.verifyUserPassword(user_type, username, password):
+        return jsonify({
+            "success": False,
+            "message": "Incorrect password"
+        }), 401
 
     # Validate and normalize phone number
     new_phone = utils.normalize_bd_phone(new_phone)
