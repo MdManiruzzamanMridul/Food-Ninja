@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { NavItem } from "@/lib/platform";
 import { getAuthUser, clearAuthSession } from "@/lib/backend";
 import { cn, Panel } from "./ui";
+import { getAuthUser, apiLogout, type AuthUser } from "@/lib/backend";
+import { useToast } from "./toast-provider";
 
 export function AppShell({
   role,
@@ -23,9 +25,14 @@ export function AppShell({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [authUser, setAuthUser] = useState<{ username: string; user_type: string } | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setUser(getAuthUser());
+  }, []);
 
   useEffect(() => {
     setAuthUser(getAuthUser());
@@ -40,9 +47,14 @@ export function AppShell({
     router.push("/");
   }
 
-  function handleSignOut() {
-    clearAuthSession();
-    router.push("/login");
+  async function handleLogout() {
+    try {
+      await apiLogout();
+      toast("Signed out successfully", "neutral");
+      router.push("/login");
+    } catch {
+      router.push("/login");
+    }
   }
 
   return (
@@ -74,15 +86,22 @@ export function AppShell({
 
               <div className="flex items-center justify-end gap-2">
                 {actions}
-                {authUser ? (
+                {user ? (
                   <button
                     type="button"
-                    onClick={handleSignOut}
-                    className="rounded-full border border-black/10 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
+                    onClick={handleLogout}
+                    className="rounded-full border border-red-500/20 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-500/20"
                   >
                     Sign out
                   </button>
-                ) : null}
+                ) : (
+                  <Link
+                    href="/login"
+                    className="rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-500/20"
+                  >
+                    Sign in
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -146,6 +165,24 @@ export function AppShell({
                     </Link>
                   ))}
                 </nav>
+
+                <Panel className="bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-slate-800">
+                    {user ? `Logged in as: ${user.username}` : "Guest session"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    {user ? `Role: ${user.user_type}` : "Sign in to access personalized orders and settings."}
+                  </p>
+                  {user && (
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="mt-3 w-full rounded-xl bg-red-500/10 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500/20"
+                    >
+                      Log out
+                    </button>
+                  )}
+                </Panel>
               </div>
             </aside>
 

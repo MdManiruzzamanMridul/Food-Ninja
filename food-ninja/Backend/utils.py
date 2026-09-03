@@ -14,7 +14,7 @@ map_headers = {
 }
 
 EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-NAME_PATTERN = r"^[A-Za-z']+$"
+NAME_PATTERN = r"^[A-Za-z\s']+$"
 USERNAME_PATTERN = r"^[A-Za-z][A-Za-z0-9_]*$"
 
 
@@ -65,6 +65,55 @@ def normalize_username(username):
     return username
 
 
+import auth
+
+
+def verifyUserPassword(user_type, username, password):
+    if not isinstance(password, str) or not password:
+        return False
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            if user_type == "user":
+                query = load_query("update_info.sql", "get_user_password")
+            elif user_type == "rider":
+                query = load_query("update_info.sql", "get_rider_password")
+            elif user_type == "admin":
+                query = load_query("update_info.sql", "get_admin_password")
+            else:
+                return False
+
+            cur.execute(query, (username,))
+            row = cur.fetchone()
+
+            if not row:
+                return False
+
+            stored_hash = row["password_hash"]
+            return auth.verify_password(password, stored_hash)
+
+
+def updatePassword(user_type, username, new_password_hash):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            try:
+                if user_type == "user":
+                    query = load_query("update_info.sql", "update_user_password")
+                elif user_type == "rider":
+                    query = load_query("update_info.sql", "update_rider_password")
+                elif user_type == "admin":
+                    query = load_query("update_info.sql", "update_admin_password")
+                else:
+                    return "invalid_user_type"
+
+                cur.execute(query, (new_password_hash, username))
+                conn.commit()
+                return "success"
+
+            except psycopg.Error:
+                return "database_error"
+
+
 def updateLocation(user_type, username, longitude, latitude,):
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -77,6 +126,7 @@ def updateLocation(user_type, username, longitude, latitude,):
                     return "invalid_user_type"
 
                 cur.execute(query, (longitude, latitude, username))
+                conn.commit()
                 return "success"
 
             except psycopg.Error:
@@ -97,6 +147,7 @@ def updateEmail(user_type, username, email):
                     return "invalid_user_type"
 
                 cur.execute(query, (email, username))
+                conn.commit()
                 return "success"
 
             except psycopg.errors.UniqueViolation:
@@ -120,6 +171,7 @@ def updatePhone(user_type, username, phone):
                     return "invalid_user_type"
 
                 cur.execute(query, (phone, username))
+                conn.commit()
                 return "success"
 
             except psycopg.errors.UniqueViolation:

@@ -22,6 +22,7 @@ AND (
             FROM foods F
             WHERE F.category = %s
             AND F.restaurant_id = R.restaurant_id
+            LIMIT 1
         )
 )
 GROUP BY

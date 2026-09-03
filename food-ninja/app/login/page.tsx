@@ -6,102 +6,59 @@ import { useRouter } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
 import { Panel, Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
-import { apiLogin, isOnboarded, setAuthSession } from "@/lib/backend";
-import { OnboardingModal } from "@/components/onboarding-modal";
+import { apiLogin } from "@/lib/backend";
 
-const roles = [
-  { id: "user", label: "Customer", hint: "Browse and order food", redirect: "/home" },
-  { id: "owner", label: "Restaurant Owner", hint: "Manage kitchen and food menus", redirect: "/owner/dashboard" },
-  { id: "rider", label: "Delivery Rider", hint: "Deliveries and live tracking", redirect: "/rider/dashboard" },
-  { id: "admin", label: "Platform Admin", hint: "Platform operations & metrics", redirect: "/admin/dashboard" },
-] as const;
-
-type RoleType = (typeof roles)[number]["id"];
+type RoleOption = "Customer" | "Rider" | "Admin";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [selectedRole, setSelectedRole] = useState<RoleType>("user");
+  const [role, setRole] = useState<RoleOption>("Customer");
+  const [open, setOpen] = useState(false);
   const [userInfo, setUserInfo] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Onboarding modal state for first-time login
-  const [onboardingState, setOnboardingState] = useState<{
-    open: boolean;
-    username: string;
-    userType: RoleType;
-    initialPhone?: string;
-    targetRedirect: string;
-  }>({
-    open: false,
-    username: "",
-    userType: "user",
-    initialPhone: "",
-    targetRedirect: "/home",
-  });
+  const roles: RoleOption[] = ["Customer", "Rider", "Admin"];
+
+  const roleToUserType: Record<RoleOption, "user" | "rider" | "admin"> = {
+    Customer: "user",
+    Rider: "rider",
+    Admin: "admin",
+  };
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
 
     if (!userInfo.trim() || !password) {
-      toast("Please enter your Username/Email/Phone and Password", "warning");
+      toast("Please enter your login identifier and password", "warning");
       return;
     }
 
     setLoading(true);
 
     try {
-      // For backend login:
-      // "admin" -> queries admin table
-      // "rider" -> queries rider table
-      // "user" / "owner" -> queries users table
-      const backendUserType = selectedRole === "admin" ? "admin" : selectedRole === "rider" ? "rider" : "user";
-
-      const payload = {
-        user_type: backendUserType,
+      const userType = roleToUserType[role];
+      const result = await apiLogin({
+        user_type: userType,
         user_info: userInfo.trim(),
-        password,
-      };
+        password: password,
+      });
 
-      const result = await apiLogin(payload as any);
-      const activeUsername = result.username || userInfo.trim();
+      toast(`Login successful as ${role}! Redirecting...`, "success");
 
-      // Ensure local session stores the selected role (e.g. owner)
-      if (result.token) {
-        setAuthSession(result.token, {
-          username: activeUsername,
-          user_type: selectedRole as any,
-          email: userInfo.includes("@") ? userInfo.trim() : undefined,
-        });
-      }
-
-      toast(`Successfully logged in as ${roles.find((r) => r.id === selectedRole)?.label}!`, "success");
-
-      const matchedRole = roles.find((r) => r.id === selectedRole);
-      const targetPath = matchedRole ? matchedRole.redirect : "/home";
-
-      // Check if user has completed first-time profile setup
-      const hasOnboarded = isOnboarded(activeUsername);
-
-      if (!hasOnboarded) {
-        // Trigger multi-step profile & map location onboarding
-        setOnboardingState({
-          open: true,
-          username: activeUsername,
-          userType: selectedRole,
-          initialPhone: userInfo.startsWith("01") || userInfo.startsWith("+8801") ? userInfo.trim() : "",
-          targetRedirect: targetPath,
-        });
-      } else {
-        // Direct navigation for recurring logins
-        setTimeout(() => {
-          router.push(targetPath);
-        }, 500);
-      }
+      setTimeout(() => {
+        if (userType === "admin") {
+          router.push("/admin/dashboard");
+        } else if (userType === "rider") {
+          router.push("/rider/dashboard");
+        } else {
+          router.push("/home");
+        }
+      }, 600);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : "Authentication failed";
+      const errorMsg = err instanceof Error ? err.message : "Failed to log in";
       toast(errorMsg, "danger");
     } finally {
       setLoading(false);
@@ -110,26 +67,25 @@ export default function LoginPage() {
 
   return (
     <main className="light-app min-h-screen bg-slate-950 px-4 py-8 text-slate-900">
-      <div className="mx-auto max-w-5xl">
-        <AuthChrome
-          nav={[
-            { href: "/login", label: "Login" },
-            { href: "/register", label: "Register" },
-          ]}
-        >
-          <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.9fr_1.1fr]">
-            <Panel className="flex flex-col justify-between p-8">
-              <div className="space-y-5">
-                <Badge tone="primary">Unified sign-in portal</Badge>
-                <h1 className="text-4xl font-semibold tracking-tight text-white">Sign in to Food Ninja</h1>
-                <p className="text-sm leading-6 text-slate-400">
-                  Authenticate directly against the PostgreSQL backend database with your role-specific credentials.
-                </p>
-              </div>
-
-              <div className="mt-8 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Select Role</p>
-                <div className="grid gap-2.5">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-6 lg:grid-cols-[.9fr_1.1fr]">
+        <div className="lg:col-span-2">
+          <AuthChrome
+            nav={[
+              { href: "/login", label: "Login" },
+              { href: "/register", label: "Register Customer" },
+              { href: "/register/partner", label: "Register Rider / Admin" },
+            ]}
+          >
+            <div className="mt-6 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
+              <Panel className="flex flex-col justify-between p-8">
+                <div className="space-y-5">
+                  <Badge tone="primary">Unified authentication</Badge>
+                  <h1 className="text-4xl font-semibold tracking-tight">Sign in to Food Ninja.</h1>
+                  <p className="text-sm leading-6 text-slate-400">
+                    Sign in with your Email, Phone Number, or Username. Select your role to authenticate against the database.
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
                   {roles.map((item) => (
                     <button
                       key={item.id}
@@ -142,102 +98,119 @@ export default function LoginPage() {
                           : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                       )}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">{item.label}</span>
-                        <span className="text-xs font-mono text-orange-400">
-                          {selectedRole === item.id ? "✓ Active" : "Select"}
-                        </span>
-                      </div>
-                      <span className="text-xs text-slate-400">{item.hint}</span>
+                      <span className="block font-medium">{item}</span>
+                      <span className="text-xs text-slate-400">
+                        {item === "Admin" ? "Admin Portal" : item === "Rider" ? "Rider Portal" : "Customer Feed"}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
             </Panel>
 
-            <Panel className="p-8">
-              <form onSubmit={handleLogin} autoComplete="off" className="space-y-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Sign In</p>
-                  <h2 className="mt-1 text-2xl font-semibold text-white">
-                    {roles.find((r) => r.id === selectedRole)?.label} Sign In
-                  </h2>
-                </div>
+              <Panel className="p-8">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-orange-300/80">Login</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">
+                      {role} Sign In
+                    </h2>
+                  </div>
 
-                <label className="block space-y-2 text-sm text-slate-300">
-                  <span>Username, Email, or Phone *</span>
-                  <input
-                    name="ninja_login_user"
-                    autoComplete="off"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    value={userInfo}
-                    onChange={(e) => setUserInfo(e.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                    placeholder="Enter email, phone, or username"
-                    required
-                  />
-                </label>
+                  <div className="grid gap-4">
+                    <label className="space-y-2 text-sm text-slate-300">
+                      <span>Username, Email, or Phone Number *</span>
+                      <input
+                        value={userInfo}
+                        onChange={(e) => setUserInfo(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                        placeholder={
+                          role === "Admin"
+                            ? "admin_sam or admin@foodninja.com"
+                            : role === "Rider"
+                            ? "rider_rahim or 01700000000"
+                            : "username, name@example.com, or 01700000000"
+                        }
+                        required
+                      />
+                    </label>
 
-                <label className="block space-y-2 text-sm text-slate-300">
-                  <span>Password *</span>
-                  <input
-                    type="password"
-                    name="ninja_login_pass"
-                    autoComplete="current-password"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-orange-400/50"
-                    placeholder="••••••••"
-                    required
-                  />
-                </label>
+                    <label className="space-y-2 text-sm text-slate-300">
+                      <span>Password *</span>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                        placeholder="••••••••"
+                        required
+                      />
+                    </label>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={cn(
-                    "mt-4 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
-                  )}
-                >
-                  {loading ? "Authenticating..." : `Sign in as ${roles.find((r) => r.id === selectedRole)?.label}`}
-                </button>
+                    <div className="space-y-2 text-sm text-slate-300">
+                      <span>Sign In Target Role</span>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpen((current) => !current)}
+                          className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-white outline-none transition hover:bg-white/10"
+                        >
+                          <span>{role}</span>
+                          <span className="text-slate-400">{open ? "▴" : "▾"}</span>
+                        </button>
+                        {open ? (
+                          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/40">
+                            {roles.map((item) => (
+                              <button
+                                key={item}
+                                type="button"
+                                onClick={() => {
+                                  setRole(item);
+                                  setOpen(false);
+                                }}
+                                className={`flex w-full items-center px-4 py-3 text-left transition ${
+                                  role === item ? "bg-orange-500/15 text-white" : "text-slate-300 hover:bg-white/5"
+                                }`}
+                              >
+                                {item}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
 
-                <div className="pt-2 text-xs text-slate-400 space-y-1">
-                  <p>
-                    Destination:{" "}
-                    <code className="text-orange-300 font-mono">
-                      {roles.find((r) => r.id === selectedRole)?.redirect}
-                    </code>
-                  </p>
-                  <p>
-                    Don't have an account?{" "}
-                    <Link href="/register" className="text-orange-300 font-medium hover:underline">
-                      Create an account
-                    </Link>
-                  </p>
-                </div>
-              </form>
-            </Panel>
-          </div>
-        </AuthChrome>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className={cn(
+                        "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                      )}
+                    >
+                      {loading ? "Signing in..." : `Sign in as ${role}`}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 pt-2 text-sm text-slate-400">
+                    <p>
+                      New customer?{" "}
+                      <Link href="/register" className="text-orange-300 hover:underline">
+                        Register Customer
+                      </Link>
+                    </p>
+                    <p>
+                      Need rider or admin account?{" "}
+                      <Link href="/register/partner" className="text-orange-300 hover:underline">
+                        Register Rider / Admin
+                      </Link>
+                    </p>
+                  </div>
+                </form>
+              </Panel>
+            </div>
+          </AuthChrome>
+        </div>
       </div>
-
-      {/* First-Time Profile & Map Location Onboarding Modal */}
-      <OnboardingModal
-        open={onboardingState.open}
-        username={onboardingState.username}
-        userType={onboardingState.userType}
-        initialPhone={onboardingState.initialPhone}
-        targetRedirect={onboardingState.targetRedirect}
-        onComplete={(destination) => {
-          setOnboardingState((prev) => ({ ...prev, open: false }));
-          toast("Profile setup completed! Welcome to Food Ninja.", "success");
-          router.push(destination);
-        }}
-      />
     </main>
   );
 }

@@ -70,68 +70,35 @@ function RegisterContent() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!email.trim() || !password) {
-      toast("Please provide your Email Address and Password", "warning");
+    const finalUsername =
+      username.trim().toLowerCase() ||
+      email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() ||
+      name.replace(/\s+/g, "").toLowerCase();
+
+    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !finalUsername) {
+      toast("Please fill in all required fields (Name, Username, Phone, Email, Password)", "warning");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Ensure username starts with a letter and matches ^[A-Za-z][A-Za-z0-9_]*$
-      let rawUser = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "");
-      if (!rawUser || !/^[a-zA-Z]/.test(rawUser)) {
-        rawUser = `ninja_${rawUser || Math.floor(1000 + Math.random() * 9000)}`;
-      }
-      const derivedUsername = rawUser.toLowerCase();
+      await apiRegister({
+        user_type: "user",
+        name: name.trim(),
+        username: finalUsername,
+        email: email.trim(),
+        phone: phone.trim(),
+        password: password.trim(),
+      });
 
-      // 2. Ensure initial name is letters only to pass backend NAME_PATTERN (^[A-Za-z']+$)
-      let rawName = email.split("@")[0].replace(/[^a-zA-Z]/g, "");
-      if (!rawName) {
-        rawName = "Ninja";
-      }
-      const derivedName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
-
-      // 3. Temporary valid BD phone placeholder for initial backend registration
-      // (Actual verified phone is collected on first-time login onboarding)
-      const placeholderPhone = "017" + Math.floor(10000000 + Math.random() * 90000000);
-
-      if (selectedRole === "admin") {
-        await apiRegister({
-          user_type: "admin",
-          username: derivedUsername,
-          email: email.trim().toLowerCase(),
-          phone: placeholderPhone,
-          password,
-        });
-      } else if (selectedRole === "rider") {
-        await apiRegister({
-          user_type: "rider",
-          username: derivedUsername,
-          name: derivedName,
-          email: email.trim().toLowerCase(),
-          phone: placeholderPhone,
-          password,
-          vehicle,
-        } as any);
-      } else {
-        // Customer or Owner registration
-        await apiRegister({
-          user_type: "user",
-          username: derivedUsername,
-          name: derivedName,
-          email: email.trim().toLowerCase(),
-          phone: placeholderPhone,
-          password,
-        });
-      }
-
-      toast("Account created successfully! Redirecting to login...", "success");
+      toast("Customer account registered successfully! Redirecting to login...", "success");
 
       setTimeout(() => {
         router.push("/login");
       }, 900);
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to create account", "danger");
+      const errorMsg = err instanceof Error ? err.message : "Failed to create account";
+      toast(errorMsg, "danger");
     } finally {
       setLoading(false);
     }
@@ -301,12 +268,125 @@ export default function RegisterPage() {
         <AuthChrome
           nav={[
             { href: "/login", label: "Login" },
-            { href: "/register", label: "Register" },
+            { href: "/register", label: "Register Customer" },
+            { href: "/register/partner", label: "Register Rider / Admin" },
           ]}
         >
-          <Suspense fallback={<div className="p-8 text-center text-white">Loading registration...</div>}>
-            <RegisterContent />
-          </Suspense>
+          <div className="mt-6 grid min-h-[calc(100vh-8rem)] gap-6 lg:grid-cols-[.95fr_1.05fr]">
+            <Panel className="p-8">
+              <Badge tone="primary">Customer registration</Badge>
+              <h1 className="mt-5 text-4xl font-semibold tracking-tight">Create your customer profile.</h1>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
+                Join Food Ninja to order food from top restaurants, track your deliveries live, and access exclusive deals.
+              </p>
+              <div className="mt-8 grid gap-3 text-sm text-slate-300">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Saved addresses & instant checkout</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Live order & rider tracking</div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">✓ Ratings, reviews & deals</div>
+              </div>
+            </Panel>
+
+            <Panel className="p-8">
+              <form onSubmit={handleRegister} className="grid gap-4">
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Full name *</span>
+                  <input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (!username) {
+                        setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase());
+                      }
+                    }}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="e.g. Ava Johnson"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Username *</span>
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="e.g. avajohnson"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Phone number *</span>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="01700000000"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Email Address *</span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="name@example.com"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Password *</span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="••••••••"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-2 text-sm text-slate-300">
+                  <span>Default delivery address (optional)</span>
+                  <input
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-slate-500"
+                    placeholder="Home, street, area"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={cn(
+                    "mt-2 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-amber-500/20 transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                  )}
+                >
+                  {loading ? "Registering..." : "Register Customer Account"}
+                </button>
+              </form>
+
+              <div className="mt-5 flex flex-col gap-1 text-sm text-slate-400">
+                <p>
+                  Already have an account?{" "}
+                  <Link href="/login" className="text-orange-300 hover:underline">
+                    Sign in here
+                  </Link>
+                </p>
+                <p>
+                  Want to register as a Delivery Rider or Admin?{" "}
+                  <Link href="/register/partner" className="text-orange-300 hover:underline">
+                    Rider & Admin Registration
+                  </Link>
+                </p>
+              </div>
+            </Panel>
+          </div>
         </AuthChrome>
       </div>
     </main>
