@@ -26,7 +26,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
     window.setTimeout(() => {
       setToasts((current) => current.filter((item) => item.id !== id));
-    }, 2800);
+    }, 3500);
   }, []);
 
   const api = useMemo(() => ({ toast }), [toast]);
@@ -34,19 +34,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-4 z-[100] flex w-full max-w-sm flex-col gap-3">
+      <div className="pointer-events-none fixed right-5 top-5 z-[9999] flex w-full max-w-sm flex-col gap-2.5">
         {toasts.map((item) => (
           <div
             key={item.id}
             className={cn(
-              "pointer-events-auto rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur",
-              item.tone === "success" && "border-emerald-400/30 bg-emerald-500/15 text-emerald-50",
-              item.tone === "warning" && "border-amber-400/30 bg-amber-500/15 text-amber-50",
-              item.tone === "danger" && "border-rose-400/30 bg-rose-500/15 text-rose-50",
-              item.tone === "default" && "border-white/10 bg-slate-900/95 text-slate-50",
+              "pointer-events-auto flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-2xl text-sm font-semibold transition-all duration-200 animate-fadeIn",
+              item.tone === "success" && "border-emerald-600 bg-emerald-600 text-white shadow-emerald-950/25",
+              item.tone === "warning" && "border-amber-600 bg-amber-500 text-white shadow-amber-950/25",
+              item.tone === "danger" && "border-rose-600 bg-rose-600 text-white shadow-rose-950/25",
+              item.tone === "default" && "border-slate-800 bg-slate-900 text-white shadow-black/40",
             )}
           >
-            {item.message}
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/25 text-xs font-bold text-white">
+              {item.tone === "success" ? "✓" : item.tone === "warning" ? "!" : item.tone === "danger" ? "✕" : "ℹ"}
+            </span>
+            <span className="leading-snug text-white font-medium">{item.message}</span>
           </div>
         ))}
       </div>

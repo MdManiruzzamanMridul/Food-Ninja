@@ -12,6 +12,7 @@ import {
   apiGetPendingOrders,
   clearAuthSession,
   apiChangePassword,
+  apiUpdateUsername,
   apiUpdateEmail,
   apiUpdatePhone,
   apiUpdateLocation,
@@ -43,13 +44,18 @@ export default function CustomerProfilePage() {
   const [tempArea, setTempArea] = useState("Gulshan 2, Dhaka");
 
   // Settings active tab
-  const [activeTab, setActiveTab] = useState<"security" | "email" | "phone">("security");
+  const [activeTab, setActiveTab] = useState<"security" | "username" | "email" | "phone">("security");
 
   // Change Password State
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Update Username State
+  const [newUsername, setNewUsername] = useState("");
+  const [usernamePassword, setUsernamePassword] = useState("");
+  const [usernameLoading, setUsernameLoading] = useState(false);
 
   // Update Email State
   const [newEmail, setNewEmail] = useState("");
@@ -60,6 +66,19 @@ export default function CustomerProfilePage() {
   const [newPhone, setNewPhone] = useState("");
   const [phonePassword, setPhonePassword] = useState("");
   const [phoneLoading, setPhoneLoading] = useState(false);
+
+  // Clear credentials form inputs when switching tabs
+  useEffect(() => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setNewUsername("");
+    setUsernamePassword("");
+    setNewEmail("");
+    setEmailPassword("");
+    setNewPhone("");
+    setPhonePassword("");
+  }, [activeTab]);
 
   useEffect(() => {
     const authUser = getAuthUser();
@@ -126,6 +145,28 @@ export default function CustomerProfilePage() {
     }
   }
 
+  async function handleUpdateUsername(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!newUsername.trim()) {
+      toast("Please enter your desired new username", "warning");
+      return;
+    }
+
+    setUsernameLoading(true);
+    try {
+      const res = await apiUpdateUsername(newUsername.trim(), usernamePassword);
+      toast(res.message || "Username updated successfully!", "success");
+      setUser((prev) => (prev ? { ...prev, username: newUsername.trim().toLowerCase() } : null));
+      setNewUsername("");
+      setUsernamePassword("");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to update username", "danger");
+    } finally {
+      setUsernameLoading(false);
+    }
+  }
+
   async function handleUpdateEmail(e: React.FormEvent) {
     e.preventDefault();
 
@@ -168,13 +209,6 @@ export default function CustomerProfilePage() {
     }
   }
 
-  const fallbackOrders: OrderItem[] = [
-    { order_id: "FD-2012", status: "Delivered", bill: "৳240" },
-    { order_id: "FD-2013", status: "Pending", bill: "৳180" },
-    { order_id: "FD-2014", status: "Preparing", bill: "৳310" },
-  ];
-
-  const displayOrders = orders.length > 0 ? orders : fallbackOrders;
 
   async function handleSaveLocation() {
     if (!user) return;
@@ -214,9 +248,10 @@ export default function CustomerProfilePage() {
     }
   }
 
-  const currentArea = profileDetails?.area || tempArea || "Gulshan 2, Dhaka";
-  const currentLat = profileDetails?.latitude ? Number(profileDetails.latitude).toFixed(4) : tempLat.toFixed(4);
-  const currentLng = profileDetails?.longitude ? Number(profileDetails.longitude).toFixed(4) : tempLng.toFixed(4);
+  const hasCustomLocation = Boolean(profileDetails?.area || profileDetails?.latitude);
+  const currentArea = profileDetails?.area || (hasCustomLocation ? tempArea : "Delivery location not calibrated");
+  const currentLat = profileDetails?.latitude ? Number(profileDetails.latitude).toFixed(4) : (hasCustomLocation ? tempLat.toFixed(4) : "23.8103");
+  const currentLng = profileDetails?.longitude ? Number(profileDetails.longitude).toFixed(4) : (hasCustomLocation ? tempLng.toFixed(4) : "90.4125");
 
   return (
     <AppShell
@@ -229,14 +264,6 @@ export default function CustomerProfilePage() {
           <Badge tone="primary">
             {user ? `${user.username} (${user.user_type})` : "Guest"}
           </Badge>
-          {user && (
-            <button
-              onClick={handleLogout}
-              className="rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
-            >
-              Sign out
-            </button>
-          )}
         </div>
       }
     >
@@ -248,32 +275,47 @@ export default function CustomerProfilePage() {
               <SectionHeading eyebrow="Order history" title="Active & Recent orders" />
               {loadingOrders && <span className="text-xs text-amber-400">Syncing with backend...</span>}
             </div>
-            <TableFrame>
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/5 text-slate-300">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Order ID</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Total Bill</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayOrders.map((order) => (
-                    <tr key={order.order_id} className="border-t border-white/10">
-                      <td className="px-4 py-3 font-medium text-white">{order.order_id}</td>
-                      <td className="px-4 py-3 text-slate-300">
-                        <span className="inline-block rounded-full bg-white/10 px-2 py-0.5 text-xs text-amber-300">
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">
-                        {typeof order.bill === "number" ? `৳${order.bill}` : order.bill}
-                      </td>
+            {orders.length === 0 ? (
+              <div className="rounded-2xl border border-white/5 bg-white/5 p-8 text-center">
+                <p className="text-sm font-medium text-slate-300">No active or past orders yet</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  When you browse menus and place an order, your live receipts and statuses will appear here.
+                </p>
+                <Link
+                  href="/home"
+                  className="mt-4 inline-flex items-center rounded-full bg-amber-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-600"
+                >
+                  Browse Restaurants →
+                </Link>
+              </div>
+            ) : (
+              <TableFrame>
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-white/5 text-slate-300">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Order ID</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Total Bill</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TableFrame>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.order_id} className="border-t border-white/10">
+                        <td className="px-4 py-3 font-medium text-white">{order.order_id}</td>
+                        <td className="px-4 py-3 text-slate-300">
+                          <span className="inline-block rounded-full bg-white/10 px-2 py-0.5 text-xs text-amber-300">
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-300">
+                          {typeof order.bill === "number" ? `৳${order.bill}` : order.bill}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableFrame>
+            )}
           </Panel>
 
           {/* Delivery Location & Map Editor */}
@@ -291,15 +333,24 @@ export default function CustomerProfilePage() {
             </div>
 
             {/* Current Active Location Card */}
-            <div className="rounded-2xl border border-black/10 bg-slate-50/80 p-4 space-y-2">
+            <div className="rounded-2xl border border-black/10 bg-slate-50/80 p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-sm font-bold text-slate-900">{currentArea}</span>
+                  <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${hasCustomLocation ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                  <div>
+                    <span className="text-sm font-bold text-slate-900 block">{currentArea}</span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {hasCustomLocation ? `${currentLat}° N, ${currentLng}° E` : "Coordinates not calibrated — click Edit Location"}
+                    </span>
+                  </div>
                 </div>
-                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-mono text-slate-600 font-medium">
-                  {currentLat}° N, {currentLng}° E
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingLocation((prev) => !prev)}
+                  className="rounded-full border border-black/10 bg-white px-3.5 py-1 text-xs font-semibold text-slate-800 shadow-xs hover:bg-slate-100 hover:text-amber-700 transition shrink-0"
+                >
+                  {isEditingLocation ? "Hide Map" : "Edit Location"}
+                </button>
               </div>
               <p className="text-xs text-slate-500">
                 Couriers use these PostGIS coordinates to compute delivery distance, ETA, and optimal routing.
@@ -369,6 +420,18 @@ export default function CustomerProfilePage() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setActiveTab("username")}
+                  className={cn(
+                    "rounded-xl px-3 py-1 text-xs font-medium transition",
+                    activeTab === "username"
+                      ? "bg-orange-500 text-white shadow-sm"
+                      : "text-slate-300 hover:text-white"
+                  )}
+                >
+                  Username
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab("email")}
                   className={cn(
                     "rounded-xl px-3 py-1 text-xs font-medium transition",
@@ -396,7 +459,13 @@ export default function CustomerProfilePage() {
 
             {/* TAB 1: Change Password */}
             {activeTab === "security" && (
-              <form onSubmit={handleChangePassword} className="space-y-4">
+              <form onSubmit={handleChangePassword} autoComplete="off" className="space-y-4">
+                {/* Off-screen trap elements to absorb browser password manager autofill */}
+                <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
+                  <input type="text" name="chrome_pwd_trap_u" tabIndex={-1} defaultValue="" />
+                  <input type="password" name="chrome_pwd_trap_p" tabIndex={-1} defaultValue="" />
+                </div>
+
                 <p className="text-xs text-slate-400">
                   Verify with your current password to set a new password for your account.
                 </p>
@@ -405,6 +474,10 @@ export default function CustomerProfilePage() {
                   <span>Current Password *</span>
                   <input
                     type="password"
+                    name="fn_chg_pwd_old"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -417,6 +490,10 @@ export default function CustomerProfilePage() {
                   <span>New Password *</span>
                   <input
                     type="password"
+                    name="fn_chg_pwd_new"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -429,6 +506,10 @@ export default function CustomerProfilePage() {
                   <span>Confirm New Password *</span>
                   <input
                     type="password"
+                    name="fn_chg_pwd_repeat"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -447,9 +528,78 @@ export default function CustomerProfilePage() {
               </form>
             )}
 
-            {/* TAB 2: Update Email */}
+            {/* TAB 2: Update Username */}
+            {activeTab === "username" && (
+              <form onSubmit={handleUpdateUsername} autoComplete="off" className="space-y-4">
+                {/* Off-screen trap elements to absorb browser password manager autofill */}
+                <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
+                  <input type="text" name="chrome_user_trap_u" tabIndex={-1} defaultValue="" />
+                  <input type="password" name="chrome_user_trap_p" tabIndex={-1} defaultValue="" />
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  Choose a new unique handle for your account. You can use it to sign in across Food Ninja.
+                </p>
+
+                <label className="space-y-1.5 text-sm text-slate-300 block">
+                  <span>Current Username</span>
+                  <input
+                    disabled
+                    value={user?.username || ""}
+                    className="w-full rounded-2xl border border-white/5 bg-white/5 px-4 py-2.5 text-slate-400 outline-none cursor-not-allowed text-xs font-mono"
+                  />
+                </label>
+
+                <label className="space-y-1.5 text-sm text-slate-300 block">
+                  <span>New Desired Username *</span>
+                  <input
+                    type="text"
+                    name="fn_upd_username_val"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase())}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500 font-semibold"
+                    placeholder="e.g. foodlover99"
+                    required
+                  />
+                </label>
+
+                <label className="space-y-1.5 text-sm text-slate-300 block">
+                  <span>Current Password for Verification</span>
+                  <input
+                    type="password"
+                    name="fn_upd_user_pwd"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    value={usernamePassword}
+                    onChange={(e) => setUsernamePassword(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
+                    placeholder="••••••••"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={usernameLoading}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
+                >
+                  {usernameLoading ? "Updating..." : "Update Username"}
+                </button>
+              </form>
+            )}
+
+            {/* TAB 3: Update Email */}
             {activeTab === "email" && (
-              <form onSubmit={handleUpdateEmail} className="space-y-4">
+              <form onSubmit={handleUpdateEmail} autoComplete="off" className="space-y-4">
+                {/* Off-screen trap elements to absorb browser password manager autofill */}
+                <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
+                  <input type="text" name="chrome_email_trap_u" tabIndex={-1} defaultValue="" />
+                  <input type="password" name="chrome_email_trap_p" tabIndex={-1} defaultValue="" />
+                </div>
+
                 <p className="text-xs text-slate-400">
                   Enter your new email address and verify with your current password.
                 </p>
@@ -458,6 +608,10 @@ export default function CustomerProfilePage() {
                   <span>New Email Address *</span>
                   <input
                     type="email"
+                    name="fn_upd_email_target"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -470,6 +624,10 @@ export default function CustomerProfilePage() {
                   <span>Current Password for Verification *</span>
                   <input
                     type="password"
+                    name="fn_upd_email_auth_pwd"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={emailPassword}
                     onChange={(e) => setEmailPassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -490,7 +648,13 @@ export default function CustomerProfilePage() {
 
             {/* TAB 3: Update Phone */}
             {activeTab === "phone" && (
-              <form onSubmit={handleUpdatePhone} className="space-y-4">
+              <form onSubmit={handleUpdatePhone} autoComplete="off" className="space-y-4">
+                {/* Off-screen trap elements to absorb browser password manager autofill */}
+                <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
+                  <input type="text" name="chrome_phone_trap_u" tabIndex={-1} defaultValue="" />
+                  <input type="password" name="chrome_phone_trap_p" tabIndex={-1} defaultValue="" />
+                </div>
+
                 <p className="text-xs text-slate-400">
                   Enter your new Bangladeshi phone number (e.g. 01700000000) and verify with your current password.
                 </p>
@@ -498,6 +662,11 @@ export default function CustomerProfilePage() {
                 <label className="space-y-1.5 text-sm text-slate-300 block">
                   <span>New Phone Number *</span>
                   <input
+                    type="text"
+                    name="fn_upd_phone_target"
+                    autoComplete="off"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={newPhone}
                     onChange={(e) => setNewPhone(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
@@ -510,6 +679,10 @@ export default function CustomerProfilePage() {
                   <span>Current Password for Verification *</span>
                   <input
                     type="password"
+                    name="fn_upd_phone_auth_pwd"
+                    autoComplete="new-password"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     value={phonePassword}
                     onChange={(e) => setPhonePassword(e.target.value)}
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"

@@ -51,9 +51,11 @@ function RegisterContent() {
     setLoading(true);
 
     try {
-      const emailUsername = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").toLowerCase() || "user";
-      const derivedUsername = `${emailUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
-      const derivedName = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      // Ensure username prefix starts strictly with letters to satisfy backend regex
+      const rawPrefix = email.split("@")[0].replace(/[^a-zA-Z]/g, "") || "ninja";
+      const cleanPrefix = rawPrefix.slice(0, 15).toLowerCase();
+      const derivedUsername = `${cleanPrefix}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const derivedName = cleanPrefix.charAt(0).toUpperCase() + cleanPrefix.slice(1);
       const placeholderPhone = `017${Math.floor(10000000 + Math.random() * 90000000)}`;
 
       if (selectedRole === "rider") {
@@ -86,12 +88,12 @@ function RegisterContent() {
       }
 
       toast(
-        `Account created successfully as ${ROLES.find((r) => r.id === selectedRole)?.title}! Please sign in.`,
+        `Account created successfully as ${ROLES.find((r) => r.id === selectedRole)?.title}! Redirecting to login...`,
         "success"
       );
 
       setTimeout(() => {
-        router.push("/login");
+        router.push(`/login?role=${selectedRole}&email=${encodeURIComponent(email.trim())}`);
       }, 1000);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to register account";
@@ -154,9 +156,11 @@ function RegisterContent() {
       {/* Right Column: Registration Form */}
       <div className="rounded-[28px] border border-black/10 bg-white p-8 shadow-sm">
         <form onSubmit={handleRegister} autoComplete="off" className="space-y-5">
-          {/* Hidden dummy fields to prevent autofill */}
-          <input type="text" name="dummy_username" className="hidden" tabIndex={-1} autoComplete="off" />
-          <input type="password" name="dummy_password" className="hidden" tabIndex={-1} autoComplete="off" />
+          {/* Off-screen trap elements to absorb browser password manager autofill */}
+          <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
+            <input type="text" name="chrome_trap_user" tabIndex={-1} defaultValue="" />
+            <input type="password" name="chrome_trap_pass" tabIndex={-1} defaultValue="" />
+          </div>
 
           <div>
             <p className="text-xs uppercase tracking-[0.25em] font-bold text-amber-700">Account Setup</p>
@@ -172,7 +176,7 @@ function RegisterContent() {
             <span>Email Address *</span>
             <input
               type="email"
-              name="user_email"
+              name="fn_reg_email_input"
               autoComplete="off"
               data-lpignore="true"
               data-1p-ignore="true"
@@ -188,7 +192,7 @@ function RegisterContent() {
             <span>Create Password *</span>
             <input
               type="password"
-              name="user_new_password"
+              name="fn_reg_secret_input"
               autoComplete="new-password"
               data-lpignore="true"
               data-1p-ignore="true"

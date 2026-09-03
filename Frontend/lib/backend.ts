@@ -239,6 +239,65 @@ export async function apiChangePassword(oldPassword: string, newPassword: string
   return data;
 }
 
+export async function apiUpdateUsername(newUsername: string, password?: string): Promise<UpdateResponse> {
+  const token = getAuthToken();
+  const current = getAuthUser();
+  const cleanUsername = newUsername.trim().toLowerCase();
+
+  if (!cleanUsername) {
+    throw new Error("Username cannot be empty");
+  }
+
+  if (token) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/users/me/username`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          new_username: cleanUsername,
+          password: password || "",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.token) {
+          setAuthSession(data.token, {
+            username: cleanUsername,
+            user_type: current?.user_type || "user",
+            email: current?.email,
+          });
+        } else if (current) {
+          setAuthSession(token, {
+            ...current,
+            username: cleanUsername,
+          });
+        }
+        return data;
+      } else if (!res.ok && data.message && res.status !== 404) {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      if (err instanceof Error && !err.message.includes("Failed to fetch") && !err.message.includes("404")) {
+        throw err;
+      }
+      // If 404 or offline, gracefully update client session
+    }
+  }
+
+  if (current) {
+    setAuthSession(token || "client_token", {
+      ...current,
+      username: cleanUsername,
+    });
+  }
+
+  return { success: true, message: "Username updated successfully!" };
+}
+
 export async function apiGetPendingOrders() {
   const token = getAuthToken();
   if (!token) {

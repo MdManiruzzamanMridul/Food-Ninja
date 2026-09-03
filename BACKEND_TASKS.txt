@@ -1,0 +1,159 @@
+================================================================================
+FOOD NINJA - BACKEND & DATABASE TASKS FOR TEAMMATE
+Feature: Username Modification with Synced Database Cascade
+Created: 2026-09-04
+================================================================================
+
+OVERVIEW:
+Frontend now supports:
+1. Prompting user right after first signup / login to choose their preferred custom username.
+2. Allowing users to change their username anytime inside their Profile -> Security Settings -> "Username" tab.
+3. Front-end calls: PATCH http://localhost:5000/users/me/username
+
+To make this fully synced with PostgreSQL in the backend, please execute the following 3 steps:
+
+--------------------------------------------------------------------------------
+STEP 1: DATABASE CONSTRAINTS (PostgreSQL)
+--------------------------------------------------------------------------------
+In `Database/schema.sql`, `username` is a PRIMARY KEY in `users` and `rider`, referenced
+as a FOREIGN KEY by `orders` and `cart`. To allow username updates to automatically
+cascade to existing orders and carts without foreign key violation, run this SQL:
+
+```sql
+-- 1. Cascade user orders
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_username_fkey;
+ALTER TABLE orders 
+  ADD CONSTRAINT orders_username_fkey 
+  FOREIGN KEY (username) REFERENCES users(username) ON UPDATE CASCADE;
+
+-- 2. Cascade user carts
+ALTER TABLE cart DROP CONSTRAINT IF EXISTS cart_username_fkey;
+ALTER TABLE cart 
+  ADD CONSTRAINT cart_username_fkey 
+  FOREIGN KEY (username) REFERENCES users(username) ON UPDATE CASCADE;
+
+-- 3. Cascade rider orders
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_rider_username_fkey;
+ALTER TABLE orders 
+  ADD CONSTRAINT orders_rider_username_fkey 
+  FOREIGN KEY (rider_username) REFERENCES rider(username) ON UPDATE CASCADE;
+```
+
+--------------------------------------------------------------------------------
+STEP 2: ADD QUERIES TO `Backend/queries/update_info.sql`
+--------------------------------------------------------------------------------
+Append these named queries to `Backend/queries/update_info.sql`:
+
+```sql
+--name:update_user_username
+UPDATE users
+SET username = %s
+WHERE username = %s;
+
+--name:update_rider_username
+UPDATE rider
+SET username = %s
+WHERE username = %s;
+
+--name:update_admin_username
+UPDATE admin
+SET username = %s
+WHERE username = %s;
+```
+
+--------------------------------------------------------------------------------
+STEP 3: ADD FLASK ROUTE `Backend/routes/update_username.py`
+--------------------------------------------------------------------------------
+Create `Backend/routes/update_username.py`:
+
+```python
+from flask import Blueprint, request, jsonify
+from db import get_connection, load_query
+import psycopg
+import utils
+import auth
+
+update_username_bp = Blueprint("update_username", __name__)
+
+@update_username_bp.route("/users/me/username", methods=["PATCH", "POST"])
+def update_username():
+    payload = auth.get_user_info()
+
+    if payload is None:
+        return jsonify({
+            "success": False,
+            "message": "Invalid or missing token"
+        }), 401
+
+    user_type = payload.get("user_type")
+    current_username = payload.get("username")
+
+    data = request.get_json() or {}
+    new_username = data.get("new_username")
+    password = data.get("password")
+
+    if not isinstance(new_username, str) or not new_username.strip():
+        return jsonify({
+            "success": False,
+            "message": "New username is required"
+        }), 400
+
+    new_username = utils.normalize_username(new_username)
+    if new_username is None:
+        return jsonify({
+            "success": False,
+            "message": "Invalid username format. Must start with a letter and contain only letters, numbers, and underscores."
+        }), 400
+
+    if new_username == current_username:
+        return jsonify({
+            "success": False,
+            "message": "New username must be different from current username"
+        }), 400
+
+    # Verify current password if provided (recommended for security)
+    if password:
+        # Retrieve password hash and verify
+        pass_query = load_query("update_info.sql", f"get_{user_type}_password")
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(pass_query, (current_username,))
+                row = cur.fetchone()
+                if not row or not auth.verify_password(password, row["password_hash"]):
+                    return jsonify({
+                        "success": False,
+                        "message": "Incorrect password"
+                    }), 401
+
+    # Check if new_username is already taken in the respective table
+    check_query = load_query("login.sql", f"{user_type}_check")
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(check_query, (new_username, new_username, new_username))
+            if cur.fetchone():
+                return jsonify({
+                    "success": False,
+                    "message": "Username is already taken"
+                }), 409
+
+            # Perform update
+            upd_query = load_query("update_info.sql", f"update_{user_type}_username")
+            cur.execute(upd_query, (new_username, current_username))
+
+    # Generate a fresh token with the new username
+    new_token = auth.create_token(new_username, user_type)
+
+    return jsonify({
+        "success": True,
+        "username": new_username,
+        "token": new_token,
+        "message": "Username updated successfully"
+    }), 200
+```
+
+Remember to register `update_username_bp` in `Backend/app.py`:
+```python
+from routes.update_username import update_username_bp
+app.register_blueprint(update_username_bp)
+```
+================================================================================

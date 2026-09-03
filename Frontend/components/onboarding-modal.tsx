@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/components/ui";
-import { apiUpdateLocation, setOnboarded } from "@/lib/backend";
+import { apiUpdateLocation, apiUpdateUsername, setOnboarded } from "@/lib/backend";
 import { OSMLocationPicker } from "./osm-location-picker";
 
 type AvatarOption = {
@@ -55,7 +55,8 @@ export function OnboardingModal({
   const [selectedAvatar, setSelectedAvatar] = useState("ninja-chef");
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>(["Dhaka Biryani", "Artisan Burgers"]);
 
-  // Step 2: Missing Database Information
+  // Step 2: Missing Database Information & Chosen Username
+  const [customUsername, setCustomUsername] = useState(username || "");
   const [legalName, setLegalName] = useState(username ? username.charAt(0).toUpperCase() + username.slice(1) : "");
   const [nidNumber, setNidNumber] = useState("");
   const [phone, setPhone] = useState(initialPhone || "");
@@ -76,14 +77,22 @@ export function OnboardingModal({
 
   async function handleFinalSubmit() {
     setIsSubmitting(true);
+    const finalUser = customUsername.trim().toLowerCase() || username;
+
     try {
-      // 1. Send location update to backend PostGIS endpoint
+      // 1. If username was chosen, update backend & session
+      if (finalUser) {
+        await apiUpdateUsername(finalUser);
+      }
+
+      // 2. Send location update to backend PostGIS endpoint
       await apiUpdateLocation({ latitude, longitude });
 
-      // 2. Persist local profile completion details
-      setOnboarded(username, {
+      // 3. Persist local profile completion details
+      setOnboarded(finalUser, {
         avatar: selectedAvatar,
         cuisines: selectedCuisines,
+        username: finalUser,
         legalName: legalName.trim(),
         nid: nidNumber.trim(),
         phone: phone.trim(),
@@ -93,12 +102,13 @@ export function OnboardingModal({
         completedAt: new Date().toISOString(),
       });
 
-      // 3. Navigate to target dashboard
+      // 4. Navigate to target dashboard
       onComplete(targetRedirect);
     } catch {
-      setOnboarded(username, {
+      setOnboarded(finalUser, {
         avatar: selectedAvatar,
         cuisines: selectedCuisines,
+        username: finalUser,
         legalName: legalName.trim(),
         nid: nidNumber.trim(),
         phone: phone.trim(),
@@ -261,6 +271,27 @@ export function OnboardingModal({
               </div>
 
               <div className="space-y-4">
+                {/* Choose Username */}
+                <label className="block space-y-1.5 text-xs text-slate-700 font-medium">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-900">Choose Your Food Ninja Username *</span>
+                    <span className="text-[10px] font-semibold text-amber-700">Unique Portal Handle</span>
+                  </div>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 font-semibold text-slate-400">@</span>
+                    <input
+                      value={customUsername}
+                      onChange={(e) => setCustomUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase())}
+                      placeholder="e.g. foodlover99"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-8 pr-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                      required
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Your handle is used for orders, delivery tracking receipts, and fast login.
+                  </p>
+                </label>
+
                 {/* Legal Name */}
                 <label className="block space-y-1.5 text-xs text-slate-700 font-medium">
                   <div className="flex items-center justify-between">

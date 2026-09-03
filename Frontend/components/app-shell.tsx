@@ -168,15 +168,6 @@ export function AppShell({
                   <p className="mt-1 text-xs text-slate-600">
                     {user ? `Role: ${user.user_type}` : "Sign in to access personalized orders and settings."}
                   </p>
-                  {user && (
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="mt-3 w-full rounded-xl bg-red-500/10 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-500/20"
-                    >
-                      Log out
-                    </button>
-                  )}
                 </Panel>
               </div>
             </aside>

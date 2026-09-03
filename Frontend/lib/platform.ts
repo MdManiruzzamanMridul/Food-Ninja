@@ -118,6 +118,6 @@ export const adminNav: NavItem[] = [
 export const customerNav: NavItem[] = [
   { href: "/home", label: "Home", hint: "Feed and search" },
   { href: "/checkout", label: "Checkout", hint: "Cart review" },
-  { href: "/orders/FD-2025", label: "Track order", hint: "Live delivery" },
+  { href: "/orders/active", label: "Track order", hint: "Live delivery" },
   { href: "/profile", label: "Profile", hint: "Saved details" },
 ];
