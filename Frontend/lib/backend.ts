@@ -13,10 +13,11 @@ export type AuthUser = {
   user_type: "user" | "admin" | "rider" | "owner";
   email?: string;
   name?: string;
+  status?: string;
 };
 
 export type LoginPayload = {
-  user_type: "user" | "admin" | "rider";
+  user_type: "user" | "admin" | "rider" | "owner";
   user_info: string;
   password: string;
 };
@@ -48,13 +49,24 @@ export type AdminRegisterPayload = {
   password: string;
 };
 
-export type RegisterPayload = UserRegisterPayload | RiderRegisterPayload | AdminRegisterPayload;
+export type OwnerRegisterPayload = {
+  user_type: "owner";
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  nid?: string;
+};
+
+export type RegisterPayload = UserRegisterPayload | RiderRegisterPayload | AdminRegisterPayload | OwnerRegisterPayload;
 
 export type LoginResponse = {
   success: boolean;
   token?: string;
   username?: string;
-  user_type?: "user" | "admin" | "rider";
+  user_type?: "user" | "admin" | "rider" | "owner";
+  status?: string;
   message?: string;
 };
 
@@ -118,6 +130,7 @@ export async function apiLogin(payload: LoginPayload): Promise<LoginResponse> {
     setAuthSession(data.token, {
       username: data.username || payload.user_info,
       user_type: data.user_type || payload.user_type,
+      status: data.status,
     });
   }
 
@@ -407,5 +420,179 @@ export function getOnboardingDetails(username: string): Record<string, unknown> 
     return JSON.parse(data);
   } catch {
     return null;
+  }
+}
+
+// Owner & Admin API helpers
+export async function apiGetOwnerStatus(): Promise<{ success: boolean; status: string; name?: string; email?: string; phone?: string; nid?: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required");
+
+  const res = await fetch(`${BACKEND_URL}/owner/status`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to fetch owner status");
+  return data;
+}
+
+export type OwnerRestaurant = {
+  restaurant_id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  open_time: string;
+  close_time: string;
+  status: string;
+};
+
+export async function apiGetOwnerRestaurants(): Promise<OwnerRestaurant[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/owner/restaurants`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data.success && Array.isArray(data.restaurants) ? data.restaurants : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function apiCreateRestaurant(payload: {
+  name: string;
+  open_time: string;
+  close_time: string;
+  latitude: number;
+  longitude: number;
+}): Promise<{ success: boolean; message: string; restaurant?: OwnerRestaurant }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required");
+
+  const res = await fetch(`${BACKEND_URL}/owner/restaurants`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to create restaurant");
+  }
+  return data;
+}
+
+export async function apiDeleteRestaurant(restaurantId: string): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required");
+
+  const res = await fetch(`${BACKEND_URL}/owner/restaurants/${restaurantId}`, {
+    method: "DELETE",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to delete restaurant");
+  }
+  return data;
+}
+
+export async function apiGetAdminPendingOwners(): Promise<any[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin/pending_owners`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data.success && Array.isArray(data.owners) ? data.owners : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function apiVerifyOwner(ownerId: string, status: "approved" | "rejected"): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Admin authorization required");
+
+  const res = await fetch(`${BACKEND_URL}/admin/verify_owner`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ owner_id: ownerId, status })
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to verify owner");
+  }
+  return data;
+}
+
+export async function apiGetAdminPendingRestaurants(): Promise<any[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin/pending_restaurants`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data.success && Array.isArray(data.restaurants) ? data.restaurants : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function apiVerifyRestaurant(restaurantId: string, status: "open" | "rejected" | "closed"): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Admin authorization required");
+
+  const res = await fetch(`${BACKEND_URL}/admin/verify_restaurant`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ restaurant_id: restaurantId, status })
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || "Failed to verify restaurant");
+  }
+  return data;
+}
+
+export type AdminUserRow = {
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  balance: string | number;
+  status: string;
+};
+
+export async function apiGetAdminUsers(): Promise<AdminUserRow[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/admin/users`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    return data.success && Array.isArray(data.users) ? data.users : [];
+  } catch {
+    return [];
   }
 }

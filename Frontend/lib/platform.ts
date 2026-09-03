@@ -98,6 +98,7 @@ export const ownerNav: NavItem[] = [
   { href: "/owner/menu", label: "Menu", hint: "Food_category and Foods" },
   { href: "/owner/orders", label: "Orders", hint: "History and transactions" },
   { href: "/owner/settings", label: "Settings", hint: "Hours and banking" },
+  { href: "/profile", label: "Account", hint: "Credentials & Security" },
 ];
 
 export const riderNav: NavItem[] = [
@@ -107,12 +108,13 @@ export const riderNav: NavItem[] = [
 ];
 
 export const adminNav: NavItem[] = [
-  { href: "/admin/dashboard", label: "Dashboard", hint: "Platform metrics" },
+  { href: "/admin/dashboard", label: "Dashboard", hint: "Platform overview" },
   { href: "/admin/users", label: "Users", hint: "Customer accounts" },
-  { href: "/admin/restaurants", label: "Restaurants", hint: "Approve and suspend" },
-  { href: "/admin/riders", label: "Riders", hint: "Onboarding review" },
-  { href: "/admin/orders", label: "Orders", hint: "Global activity" },
-  { href: "/admin/payments", label: "Payments", hint: "Fees and payouts" },
+  { href: "/admin/owners", label: "Restaurant Owners", hint: "Partner approvals" },
+  { href: "/admin/restaurants", label: "Restaurants", hint: "Kitchen approvals" },
+  { href: "/admin/orders", label: "Orders", hint: "Live delivery feed" },
+  { href: "/admin/riders", label: "Riders", hint: "Delivery fleet" },
+  { href: "/admin/payments", label: "Payments", hint: "Reconciliation" },
 ];
 
 export const customerNav: NavItem[] = [

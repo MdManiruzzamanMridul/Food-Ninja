@@ -10,6 +10,7 @@ import { Badge, Panel, SectionHeading } from "@/components/ui";
 import { customerNav } from "@/lib/platform";
 import { getAuthUser, getOnboardingDetails } from "@/lib/backend";
 import { useToast } from "@/components/toast-provider";
+import { OwnerAccessGuard } from "@/components/owner-access-guard";
 
 type CartItem = {
   id: string;
@@ -91,6 +92,7 @@ export default function CheckoutPage() {
       nav={customerNav}
       actions={<Badge tone="primary">Secure checkout</Badge>}
     >
+      <OwnerAccessGuard />
       <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
         {/* Left Column: Cart Review */}
         <Panel className="space-y-5 p-6">

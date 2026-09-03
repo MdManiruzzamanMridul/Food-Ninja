@@ -4,6 +4,7 @@ import { ActionButton } from "@/components/action-button";
 import { Badge, Panel, SectionHeading } from "@/components/ui";
 import { customerCategories, customerNav, customerRestaurants } from "@/lib/platform";
 import { getRestaurantCards } from "@/lib/restaurants";
+import { OwnerAccessGuard } from "@/components/owner-access-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function CustomerHomePage() {
         </Link>
       }
     >
+      <OwnerAccessGuard />
       <div className="space-y-6">
         <Panel className="space-y-5 p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

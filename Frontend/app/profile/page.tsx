@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Badge, Panel, SectionHeading, TableFrame, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
-import { customerNav } from "@/lib/platform";
+import { customerNav, ownerNav, riderNav, adminNav } from "@/lib/platform";
 import {
   getAuthUser,
   apiGetPendingOrders,
@@ -258,7 +258,7 @@ export default function CustomerProfilePage() {
       role="Account portal"
       title="Profile & Settings"
       subtitle="Manage your profile credentials, change password, and view order history."
-      nav={customerNav}
+      nav={user?.user_type === "owner" ? ownerNav : user?.user_type === "rider" ? riderNav : user?.user_type === "admin" ? adminNav : customerNav}
       actions={
         <div className="flex items-center gap-2">
           <Badge tone="primary">

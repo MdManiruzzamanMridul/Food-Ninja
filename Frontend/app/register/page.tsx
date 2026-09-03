@@ -10,7 +10,7 @@ import { apiRegister } from "@/lib/backend";
 
 const ROLES = [
   { id: "user", title: "Customer", subtitle: "Order food & track deliveries", user_type: "user" },
-  { id: "owner", title: "Restaurant Owner", subtitle: "Manage food menus & orders", user_type: "user" },
+  { id: "owner", title: "Restaurant Owner", subtitle: "Manage food menus & orders", user_type: "owner" },
   { id: "rider", title: "Delivery Partner", subtitle: "Earn by delivering in Dhaka", user_type: "rider" },
   { id: "admin", title: "Platform Admin", subtitle: "Platform operations & control", user_type: "admin" },
 ] as const;
@@ -58,7 +58,17 @@ function RegisterContent() {
       const derivedName = cleanPrefix.charAt(0).toUpperCase() + cleanPrefix.slice(1);
       const placeholderPhone = `017${Math.floor(10000000 + Math.random() * 90000000)}`;
 
-      if (selectedRole === "rider") {
+      if (selectedRole === "owner") {
+        await apiRegister({
+          user_type: "owner",
+          username: derivedUsername,
+          name: derivedName,
+          email: email.trim(),
+          phone: placeholderPhone,
+          password: password,
+          nid: `NID${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+        });
+      } else if (selectedRole === "rider") {
         await apiRegister({
           user_type: "rider",
           username: derivedUsername,

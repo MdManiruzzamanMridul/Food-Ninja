@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
 import { Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
-import { apiLogin, isOnboarded, setAuthSession } from "@/lib/backend";
+import { apiLogin, isOnboarded, setOnboarded, setAuthSession } from "@/lib/backend";
 import { OnboardingModal } from "@/components/onboarding-modal";
 
 const roles = [
@@ -66,12 +66,8 @@ function LoginContent() {
     setLoading(true);
 
     try {
-      // Backend expects user_info + password + user_type
-      // Note: "user" and "owner" both authenticate in the users table
-      const backendUserType = selectedRole === "admin" ? "admin" : selectedRole === "rider" ? "rider" : "user";
-
       const payload = {
-        user_type: backendUserType,
+        user_type: selectedRole,
         user_info: userInfo.trim(),
         password,
       };
@@ -82,8 +78,9 @@ function LoginContent() {
       if (result.token) {
         setAuthSession(result.token, {
           username: activeUsername,
-          user_type: selectedRole as any,
+          user_type: selectedRole,
           email: userInfo.includes("@") ? userInfo.trim() : undefined,
+          status: result.status,
         });
       }
 
@@ -92,8 +89,8 @@ function LoginContent() {
       const matchedRole = roles.find((r) => r.id === selectedRole);
       const targetPath = matchedRole ? matchedRole.redirect : "/home";
 
-      // Check if user has completed first-time profile & map setup
-      const hasOnboarded = isOnboarded(activeUsername);
+      // Admin accounts do not need the onboarding popup (persona, fav food, or map calibration)
+      const hasOnboarded = selectedRole === "admin" || isOnboarded(activeUsername);
 
       if (!hasOnboarded) {
         setOnboardingState({
@@ -104,6 +101,9 @@ function LoginContent() {
           targetRedirect: targetPath,
         });
       } else {
+        if (selectedRole === "admin") {
+          setOnboarded(activeUsername);
+        }
         setTimeout(() => {
           router.push(targetPath);
         }, 500);

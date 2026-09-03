@@ -67,3 +67,23 @@ WHERE username = %s;
 UPDATE admin
 SET password_hash = %s
 WHERE username = %s;
+
+--name:get_owner_password
+SELECT password_hash
+FROM restaurant_owner
+WHERE owner_id = %s;
+
+--name:update_owner_email
+UPDATE restaurant_owner
+SET email = %s
+WHERE owner_id = %s;
+
+--name:update_owner_phone
+UPDATE restaurant_owner
+SET phone = %s
+WHERE owner_id = %s;
+
+--name:update_owner_password
+UPDATE restaurant_owner
+SET password_hash = %s
+WHERE owner_id = %s;

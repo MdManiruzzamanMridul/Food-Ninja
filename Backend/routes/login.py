@@ -14,7 +14,7 @@ def register():
 
     user_type = data.get("user_type")
 
-    if user_type not in ("user", "admin", "rider"):
+    if user_type not in ("user", "admin", "rider", "owner"):
         return jsonify({
             "success": False,
             "message": "Invalid user type"
@@ -43,7 +43,7 @@ def register():
                 "message": "Insufficient registration information"
             }), 400
 
-    # Every user and rider must provide name
+    # Every user, rider, and owner must provide name
     else:
         name = data.get("name")
 
@@ -85,6 +85,15 @@ def register():
                 "message": "Invalid vehicle"
             }), 400
 
+    # Owner additionally handles NID
+    if user_type == "owner":
+        nid = data.get("nid")
+        if not isinstance(nid, str) or not nid.strip():
+            import time
+            nid = f"NID{int(time.time())}{username[:6]}"
+        else:
+            nid = nid.strip()
+
     # Normalize username
     username = utils.normalize_username(username)
 
@@ -112,8 +121,8 @@ def register():
             "message": "Invalid phone number"
         }), 400
 
-    # Validate user's/rider's name
-    if user_type in ("user", "rider"):
+    # Validate user's/rider's/owner's name
+    if user_type in ("user", "rider", "owner"):
         name = name.strip()
 
         if not utils.is_valid_name(name):
@@ -131,6 +140,8 @@ def register():
                     query = load_query("login.sql", "admin_check")
                 elif user_type == "rider":
                     query = load_query("login.sql", "rider_check")
+                elif user_type == "owner":
+                    query = load_query("login.sql", "owner_check")
                 else:
                     query = load_query("login.sql", "user_check")
 
@@ -185,6 +196,26 @@ def register():
                         )
                     )
 
+                elif user_type == "owner":
+
+                    query = load_query(
+                        "login.sql",
+                        "owner_register"
+                    )
+
+                    cur.execute(
+                        query,
+                        (
+                            username,
+                            name,
+                            email,
+                            phone,
+                            nid,
+                            hashed_password,
+                            "pending"
+                        )
+                    )
+
                 else:
 
                     query = load_query(
@@ -212,6 +243,8 @@ def register():
                         if user_type == "admin"
                         else "Rider registered successfully"
                         if user_type == "rider"
+                        else "Restaurant Owner registered successfully"
+                        if user_type == "owner"
                         else "User registered successfully"
                     )
                 }), 201
@@ -237,7 +270,7 @@ def login():
     user_info = data.get("user_info")
     password = data.get("password")
 
-    if user_type not in ("user", "admin", "rider"):
+    if user_type not in ("user", "admin", "rider", "owner"):
         return jsonify({
             "success": False,
             "message": "Invalid user type"
@@ -311,6 +344,11 @@ def login():
                         "login.sql",
                         "rider_check"
                     )
+                elif user_type == "owner":
+                    query = load_query(
+                        "login.sql",
+                        "owner_check"
+                    )
                 else:
                     query = load_query(
                         "login.sql",
@@ -332,6 +370,7 @@ def login():
 
                 stored_username = row["username"]
                 stored_password = row["password_hash"]
+                stored_status = row.get("status", "pending") if isinstance(row, dict) else "pending"
 
                 if not auth.verify_password(
                     password,
@@ -351,7 +390,8 @@ def login():
                     "success": True,
                     "token": token,
                     "username": stored_username,
-                    "user_type": user_type
+                    "user_type": user_type,
+                    "status": stored_status
                 }), 200
 
     except psycopg.Error:

@@ -80,6 +80,8 @@ def verifyUserPassword(user_type, username, password):
                 query = load_query("update_info.sql", "get_rider_password")
             elif user_type == "admin":
                 query = load_query("update_info.sql", "get_admin_password")
+            elif user_type == "owner":
+                query = load_query("update_info.sql", "get_owner_password")
             else:
                 return False
 
@@ -103,6 +105,8 @@ def updatePassword(user_type, username, new_password_hash):
                     query = load_query("update_info.sql", "update_rider_password")
                 elif user_type == "admin":
                     query = load_query("update_info.sql", "update_admin_password")
+                elif user_type == "owner":
+                    query = load_query("update_info.sql", "update_owner_password")
                 else:
                     return "invalid_user_type"
 
@@ -143,6 +147,8 @@ def updateEmail(user_type, username, email):
                     query = load_query("update_info.sql", "update_rider_email")
                 elif user_type == "admin":
                     query = load_query("update_info.sql", "update_admin_email")
+                elif user_type == "owner":
+                    query = load_query("update_info.sql", "update_owner_email")
                 else:
                     return "invalid_user_type"
 
@@ -167,6 +173,8 @@ def updatePhone(user_type, username, phone):
                     query = load_query("update_info.sql", "update_rider_phone")
                 elif user_type == "admin":
                     query = load_query("update_info.sql", "update_admin_phone")
+                elif user_type == "owner":
+                    query = load_query("update_info.sql", "update_owner_phone")
                 else:
                     return "invalid_user_type"
 

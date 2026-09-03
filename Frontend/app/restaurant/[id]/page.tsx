@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { ActionButton } from "@/components/action-button";
 import { Badge, Panel, SectionHeading } from "@/components/ui";
 import { customerNav } from "@/lib/platform";
+import { OwnerAccessGuard } from "@/components/owner-access-guard";
 
 export default function RestaurantDetailsPage({ params }: { params: { id: string } }) {
   const restaurantName = `Restaurant ${params.id}`;
@@ -25,6 +26,7 @@ export default function RestaurantDetailsPage({ params }: { params: { id: string
         </Link>
       }
     >
+      <OwnerAccessGuard />
       <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
         <div className="space-y-6">
           <Panel className="space-y-4 p-6">

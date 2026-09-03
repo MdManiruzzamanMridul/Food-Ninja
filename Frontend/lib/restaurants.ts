@@ -53,7 +53,32 @@ export async function getRestaurantCards(limit = 12): Promise<RestaurantCard[]> 
       [limit],
     );
 
-    return rows.map((restaurant) => ({
+    // 1. Fetch newly registered and approved partner restaurants
+    let approvedCards: RestaurantCard[] = [];
+    try {
+      const approvedRes = await pool.query<{
+        id: string;
+        name: string;
+      }>(
+        `SELECT restaurant_id AS id, name
+         FROM restaurant
+         WHERE status = 'open'
+         ORDER BY restaurant_id DESC;`
+      );
+
+      approvedCards = approvedRes.rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        cuisine: "Dhaka Partner Kitchen",
+        area: "Verified Partner",
+        rating: "New",
+        mapsUrl: null,
+      }));
+    } catch {
+      // ignore if table is empty or error
+    }
+
+    const directoryCards = rows.map((restaurant) => ({
       id: restaurant.id,
       name: restaurant.name,
       cuisine: restaurant.cuisine?.replaceAll(";", " • ") ?? restaurant.venue_type ?? "Local food",
@@ -61,6 +86,8 @@ export async function getRestaurantCards(limit = 12): Promise<RestaurantCard[]> 
       rating: restaurant.rating ?? "New",
       mapsUrl: restaurant.maps_url,
     }));
+
+    return [...approvedCards, ...directoryCards].slice(0, limit);
   } catch (error) {
     console.error("Unable to load restaurants from Neon", error);
     return [];

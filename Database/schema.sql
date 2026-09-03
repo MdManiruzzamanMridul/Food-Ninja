@@ -19,7 +19,8 @@ CREATE TABLE restaurant_owner (
 	phone varchar(20) NOT NULL UNIQUE,
 	email varchar(254) NOT NULL UNIQUE,
 	nid varchar(50) NOT NULL UNIQUE,
-	password_hash varchar(255) NOT NULL
+	password_hash varchar(255) NOT NULL,
+	status varchar(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'banned'))
 );
 
 CREATE TABLE users (
@@ -56,7 +57,7 @@ CREATE TABLE restaurant (
 	location geography(Point, 4326) NOT NULL,
 	open_time time NOT NULL,
 	close_time time NOT NULL,
-	status varchar(20) DEFAULT 'closed' CHECK (status IN ('open', 'closed', 'banned'))
+	status varchar(20) DEFAULT 'closed' CHECK (status IN ('pending', 'open', 'closed', 'banned'))
 );
 
 CREATE TABLE foods (

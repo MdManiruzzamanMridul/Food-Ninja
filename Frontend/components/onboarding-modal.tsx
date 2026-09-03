@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/components/ui";
 import { apiUpdateLocation, apiUpdateUsername, setOnboarded } from "@/lib/backend";
 import { OSMLocationPicker } from "./osm-location-picker";
@@ -67,7 +67,15 @@ export function OnboardingModal({
   const [selectedAreaName, setSelectedAreaName] = useState("Gulshan 2, Dhaka");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!open) return null;
+  // Admin accounts do not need persona, fav food, or customer onboarding
+  useEffect(() => {
+    if (open && userType === "admin") {
+      setOnboarded(username);
+      onComplete(targetRedirect);
+    }
+  }, [open, userType, username, targetRedirect, onComplete]);
+
+  if (!open || userType === "admin") return null;
 
   function toggleCuisine(c: string) {
     setSelectedCuisines((prev) =>

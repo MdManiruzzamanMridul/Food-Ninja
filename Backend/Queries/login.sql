@@ -28,3 +28,13 @@ WHERE username = %s OR email = %s OR phone = %s
 INSERT INTO rider
 (username, name, email, phone, password_hash, vehicle) VALUES
 (%s, %s, %s, %s, %s, %s)
+
+--name:owner_check
+SELECT owner_id AS username, password_hash, status
+FROM restaurant_owner
+WHERE owner_id = %s OR email = %s OR phone = %s
+
+--name:owner_register
+INSERT INTO restaurant_owner
+(owner_id, name, email, phone, nid, password_hash, status) VALUES
+(%s, %s, %s, %s, %s, %s, %s)
