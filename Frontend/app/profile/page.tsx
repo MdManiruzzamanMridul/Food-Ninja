@@ -14,7 +14,11 @@ import {
   apiChangePassword,
   apiUpdateEmail,
   apiUpdatePhone,
+  apiUpdateLocation,
+  setOnboarded,
+  getOnboardingDetails,
 } from "@/lib/backend";
+import { OSMLocationPicker } from "@/components/osm-location-picker";
 
 type OrderItem = {
   order_id: string | number;
@@ -30,6 +34,13 @@ export default function CustomerProfilePage() {
   const [profileDetails, setProfileDetails] = useState<Record<string, any> | null>(null);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+
+  // Location state
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const [tempLat, setTempLat] = useState(23.7925);
+  const [tempLng, setTempLng] = useState(90.4078);
+  const [tempArea, setTempArea] = useState("Gulshan 2, Dhaka");
 
   // Settings active tab
   const [activeTab, setActiveTab] = useState<"security" | "email" | "phone">("security");
@@ -54,6 +65,13 @@ export default function CustomerProfilePage() {
     const authUser = getAuthUser();
     if (authUser) {
       setUser(authUser);
+      const details = getOnboardingDetails(authUser.username);
+      if (details) {
+        setProfileDetails(details);
+        if (details.latitude) setTempLat(Number(details.latitude));
+        if (details.longitude) setTempLng(Number(details.longitude));
+        if (details.area) setTempArea(String(details.area));
+      }
       setLoadingOrders(true);
       apiGetPendingOrders()
         .then((fetchedOrders) => {
@@ -72,7 +90,7 @@ export default function CustomerProfilePage() {
 
   function handleLogout() {
     clearAuthSession();
-    toast("Logged out successfully", "neutral");
+    toast("Logged out successfully", "default");
     router.push("/login");
   }
 
@@ -150,12 +168,17 @@ export default function CustomerProfilePage() {
     }
   }
 
-  const fallbackOrders = [
+  const fallbackOrders: OrderItem[] = [
     { order_id: "FD-2012", status: "Delivered", bill: "৳240" },
     { order_id: "FD-2013", status: "Pending", bill: "৳180" },
     { order_id: "FD-2014", status: "Preparing", bill: "৳310" },
   ];
 
+  const displayOrders = orders.length > 0 ? orders : fallbackOrders;
+
+  async function handleSaveLocation() {
+    if (!user) return;
+    setIsSavingLocation(true);
     try {
       // 1. Update PostgreSQL PostGIS geography in backend
       await apiUpdateLocation({ latitude: tempLat, longitude: tempLng });
@@ -296,7 +319,7 @@ export default function CustomerProfilePage() {
                 <OSMLocationPicker
                   initialLat={Number(profileDetails?.latitude || tempLat)}
                   initialLng={Number(profileDetails?.longitude || tempLng)}
-                  onLocationChange={(lat, lng, address) => {
+                  onLocationChange={(lat: number, lng: number, address?: string) => {
                     setTempLat(lat);
                     setTempLng(lng);
                     if (address) setTempArea(address);

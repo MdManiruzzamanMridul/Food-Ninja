@@ -10,11 +10,7 @@ export type BackendResponse<T> = {
 
 export type AuthUser = {
   username: string;
-<<<<<<< HEAD
   user_type: "user" | "admin" | "rider" | "owner";
-=======
-  user_type: "user" | "admin" | "rider";
->>>>>>> c624e547a5ca4a7e3852bced66753dc095e93640
   email?: string;
   name?: string;
 };

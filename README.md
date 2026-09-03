@@ -17,7 +17,7 @@ A modern, high-performance full-stack food delivery platform built to handle rea
 
 ## 📦 Project Dependencies
 
-### Production Dependencies (`food-ninja/package.json`)
+### Production Dependencies (`Frontend/package.json`)
 
 | Package | Version | Purpose |
 | :--- | :--- | :--- |
@@ -25,9 +25,9 @@ A modern, high-performance full-stack food delivery platform built to handle rea
 | **`react`** | `19.2.8` | Core UI library for component-based interface rendering |
 | **`react-dom`** | `19.2.8` | DOM renderer for React |
 | **`pg`** | `^8.23.0` | PostgreSQL client for Node.js to connect to Postgres / Neon databases |
-| **`csv-parse`** | `^7.0.2` | Fast CSV parser for importing external restaurant datasets |
+| **`leaflet`** | `^1.9.4` | Interactive maps for location picking and rider tracking |
 
-### Development Dependencies (`food-ninja/package.json`)
+### Development Dependencies (`Frontend/package.json`)
 
 | Package | Version | Purpose |
 | :--- | :--- | :--- |
@@ -41,11 +41,11 @@ A modern, high-performance full-stack food delivery platform built to handle rea
 | **`@types/react-dom`** | `^19` | TypeScript definitions for React 19 DOM |
 | **`@types/pg`** | `^8.21.0` | TypeScript definitions for Node PostgreSQL client |
 
-### Backend Prototype Dependencies (`food-ninja/Backend`)
+### Backend Prototype Dependencies (`Backend/`)
 
 | Package / Tool | Version / Spec | Purpose |
 | :--- | :--- | :--- |
-| **`Python`** | `3.10+` | Python runtime for auxiliary backend microservices |
+| **`Python`** | `3.10+` | Python runtime for backend microservices |
 | **`Flask`** | `Latest` | Lightweight WSGI web framework for API endpoints |
 | **`psycopg` / `psycopg_pool`** | `v3+` | PostgreSQL connection pool and adapter for Python |
 | **`python-dotenv`** | `Latest` | Loads environment variables from `.env` files |
@@ -56,30 +56,36 @@ A modern, high-performance full-stack food delivery platform built to handle rea
 
 ```text
 Food Ninja/
-├── ERD_dark.png                       # Database Entity Relationship Diagram
-├── README.md                          # Root project documentation
-└── food-ninja/                        # Next.js application root
-    ├── app/                           # App router pages & layouts
-    │   ├── admin/                     # Admin dashboard & management pages
-    │   ├── checkout/                  # Order checkout flow
-    │   ├── home/                      # Restaurant browsing & search
-    │   ├── login/ & register/         # User authentication views
-    │   ├── orders/                    # Order tracking & details
-    │   ├── owner/                     # Restaurant owner portal
-    │   ├── profile/                   # User profile settings
-    │   └── rider/                     # Rider delivery portal
-    ├── Backend/                       # Python Flask API & SQL queries
-    │   ├── Queries/                   # Parameterized SQL query files
-    │   ├── app.py                     # Flask application entry point
-    │   └── db.py                      # Database connection pool setup
-    ├── components/                    # Reusable React UI components
-    ├── db/
-    │   └── schema.sql                 # PostgreSQL table schemas & indexes
-    ├── lib/                           # Utility functions & database pools
-    ├── public/                        # Static assets & icons
-    ├── scripts/                       # Database import and verification scripts
-    ├── package.json                   # Project dependencies & npm scripts
-    └── tsconfig.json                  # TypeScript configuration
+├── Database/                          # Database schemas, migrations, & diagrams
+│   ├── schema.sql                     # PostgreSQL PostGIS table schemas
+│   └── ERD_dark.png                   # Database Entity Relationship Diagram
+├── Backend/                           # Python Flask REST API & query services
+│   ├── Queries/                       # Parameterized SQL queries
+│   ├── routes/                        # Modular Flask API blueprints
+│   ├── app.py                         # Flask server entry point
+│   ├── auth.py                        # JWT security & password hashing
+│   ├── db.py                          # Connection pooling & SQL loader
+│   ├── utils.py                       # Validations & Distance Matrix routing
+│   ├── requirements.txt               # Python dependencies
+│   └── BACKEND_TASKS.md               # Backend progress & task tracking
+├── Frontend/                          # Next.js 16 Web Application
+│   ├── app/                           # App router pages & layouts
+│   │   ├── admin/                     # Admin dashboard & management
+│   │   ├── checkout/                  # Order checkout flow
+│   │   ├── home/                      # Restaurant browsing & search
+│   │   ├── login/ & register/         # Multi-role authentication & onboarding
+│   │   ├── orders/                    # Live order tracking & details
+│   │   ├── owner/                     # Restaurant owner portal
+│   │   ├── profile/                   # Customer profile settings
+│   │   └── rider/                     # Rider delivery portal
+│   ├── components/                    # Reusable UI & Leaflet map components
+│   ├── lib/                           # Platform state, database pool, & API client
+│   ├── public/                        # Static assets & icons
+│   ├── package.json                   # Frontend dependencies & scripts
+│   └── tsconfig.json                  # TypeScript configuration
+├── package.json                       # Root script orchestrator (--prefix Frontend)
+├── .gitignore                         # Unified root gitignore
+└── README.md                          # Root project documentation
 ```
 
 ---
@@ -124,58 +130,46 @@ The application is powered by a relational PostgreSQL database (compatible with 
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/your-username/food-ninja.git
-   cd "Food Ninja/food-ninja"
+   cd "Food Ninja"
    ```
 
-2. **Install frontend and project dependencies:**
+2. **Install frontend dependencies:**
    ```bash
-   npm install
+   # From root:
+   npm install --prefix Frontend
+   # OR:
+   cd Frontend && npm install
    ```
 
 3. **Configure Environment Variables:**
-   Copy `.env.example` to create `.env.local`:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Add your unmasked PostgreSQL / Neon database connection string:
+   Create `Frontend/.env.local` with your PostgreSQL / Neon database connection string:
    ```env
    DATABASE_URL="postgresql://user:password@ep-sample-123456.us-east-2.aws.neon.tech/food_ninja?sslmode=require"
    ```
 
-4. **Import Restaurant Dataset (Optional):**
-   The project includes a repeatable importer for the public [Dhaka Restaurant Directory](https://github.com/abusalehmnasim/dhaka-restaurant-directory) CSV dataset:
+4. **Start the Frontend Development Server:**
    ```bash
-   # Import 100 usable restaurant records into Neon/PostgreSQL
-   npm run db:import-dhaka -- path/to/dhaka_restaurants.csv
-
-   # Verify the imported records
-   npm run db:verify-dhaka
-   ```
-
-5. **Start the Development Server:**
-   ```bash
+   # From project root:
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📜 Available Scripts
+## 📜 Available Scripts (Run from project root)
 
 | Script | Command | Description |
 | :--- | :--- | :--- |
-| `dev` | `next dev` | Starts the Next.js development server on `http://localhost:3000` |
-| `build` | `next build` | Creates an optimized production build |
-| `start` | `next start` | Starts the Next.js production server |
-| `lint` | `eslint` | Runs ESLint to inspect code for syntax and style issues |
-| `db:import-dhaka` | `node --env-file=.env.local scripts/import-dhaka-restaurants.mjs` | Imports restaurant records from CSV into `dhaka_restaurants` table |
-| `db:verify-dhaka` | `node --env-file=.env.local scripts/verify-dhaka-restaurants.mjs` | Checks and prints total imported restaurant records in the database |
+| `dev` | `npm run dev` | Starts Next.js development server on `http://localhost:3000` |
+| `build` | `npm run build` | Builds optimized production bundle in `Frontend/` |
+| `start` | `npm run start` | Starts Next.js production server |
+| `lint` | `npm run lint` | Runs ESLint across `Frontend/` |
 
 ---
 
-## 🐍 Optional Python Backend Setup
+## 🐍 Python Backend Setup
 
-If running the auxiliary Flask service in `food-ninja/Backend`:
+If running the Flask API service in `Backend/`:
 
 1. Navigate to the backend folder:
    ```bash

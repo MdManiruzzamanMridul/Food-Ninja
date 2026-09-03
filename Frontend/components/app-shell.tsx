@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import type { NavItem } from "@/lib/platform";
-import { getAuthUser, clearAuthSession } from "@/lib/backend";
+import { getAuthUser, clearAuthSession, apiLogout, type AuthUser } from "@/lib/backend";
 import { cn, Panel } from "./ui";
-import { getAuthUser, apiLogout, type AuthUser } from "@/lib/backend";
 import { useToast } from "./toast-provider";
 
 export function AppShell({
@@ -34,10 +33,6 @@ export function AppShell({
     setUser(getAuthUser());
   }, []);
 
-  useEffect(() => {
-    setAuthUser(getAuthUser());
-  }, []);
-
   function handleBack() {
     if (window.history.length > 1) {
       router.back();
@@ -50,7 +45,7 @@ export function AppShell({
   async function handleLogout() {
     try {
       await apiLogout();
-      toast("Signed out successfully", "neutral");
+      toast("Signed out successfully", "default");
       router.push("/login");
     } catch {
       router.push("/login");
