@@ -1,0 +1,167 @@
+================================================================================
+FOOD NINJA — CSE 216 60% EVALUATION BACKEND TASK ROADMAP
+Target Developer (Backend & Database): Tamim
+Follow-up Developer (Frontend): Mridul
+Generated: 2026-09-05
+================================================================================
+
+OVERVIEW:
+This document organizes all required tasks for the CSE 216 60% Project Evaluation
+in strict execution precedence order.
+
+Every phase builds directly on top of the previous one without blockers:
+[Phase 4: Seed DB] ──> [Phase 1: Security Base] ──> [Phase 2: Core Endpoints] ──> [Phase 3: Frontend by Mridul]
+
+================================================================================
+1️⃣ PRECEDENCE 1: DATABASE SEED FOUNDATION (PHASE 4) — FOR TAMIM
+================================================================================
+*Must be done first so there is clean, testable baseline data in PostgreSQL to
+verify all roles, restaurants, menus, and orders during development and evaluation.
+
+Task 1.1: Create `Database/seed.sql`
+  - Location: `Database/seed.sql`
+  - What to do: Write raw SQL INSERT statements with pre-hashed passwords
+    (scrypt / Werkzeug password hashes for Password123!) for:
+    1. 1 Platform Admin: admin1
+    2. 1 Restaurant Owner: owner1
+    3. 1 Delivery Rider: rider1 (vehicle: 'bike')
+    4. 1 Customer User: user1
+    5. 2 Restaurants: e.g. 'Spice Harbor', 'Burger Lab' with PostGIS coordinates (SRID 4326).
+    6. 6 Food items under categories ('Biryani', 'Burgers', 'Pizza') in `foods` table.
+
+================================================================================
+2️⃣ PRECEDENCE 2: CORE SECURITY & RBAC INFRASTRUCTURE (PHASE 1) — FOR TAMIM
+================================================================================
+*Must be in place before writing feature endpoints so every route can enforce
+role-based access control and pass Postman/curl evaluation tests without deductions.
+
+Task 2.1: Implement `@require_roles` RBAC Decorator in `Backend/auth.py`
+  - File: `Backend/auth.py`
+  - What to do: Create a decorator that extracts the JWT from the Authorization
+    header, verifies it is valid and not in `revoked_tokens`, checks `payload["user_type"]`:
+    - Return 401 Unauthorized if token is missing, expired, or revoked.
+    - Return 403 Forbidden if the authenticated role is not in the allowed roles list.
+
+Task 2.2: Refactor `POST /login` (Server-Resolved Role from DB)
+  - Files: `Backend/routes/login.py`, `Backend/queries/login.sql`
+  - Rule: Evaluators strictly penalize sending user role from client.
+  - What to do:
+    1. Update `POST /login` to accept ONLY:
+       { "user_info": "...", "password": "..." }
+    2. Query `admin`, `restaurant_owner`, `rider`, and `users` to identify which table
+       the identifier belongs to.
+    3. Verify the password hash against the resolved record.
+    4. Sign the verified role (`admin`, `owner`, `rider`, `user`) into the JWT.
+
+================================================================================
+3️⃣ PRECEDENCE 3: RESTAURANT & MENU CATALOG (PHASE 2) — FOR TAMIM
+================================================================================
+*Required so the customer flow has real food items to add to cart and checkout.
+
+Task 3.1: Public Menu & Owner Restaurant Endpoints
+  - Files: `Backend/routes/owner.py`, `Backend/queries/owner.sql`
+  - Endpoints to implement:
+    1. `GET /restaurants/<restaurant_id>/foods`
+       - Public endpoint returning food list for a specific restaurant.
+    2. `GET /owner/status`
+       - Protected (`@require_roles('owner')`). Returns owner profile and status.
+    3. `GET /owner/restaurants`
+       - Protected (`@require_roles('owner')`). Returns all restaurants owned by the logged-in owner.
+    4. `POST /owner/restaurants`
+       - Protected (`@require_roles('owner')`). Creates a new restaurant record in `restaurant`.
+    5. `GET /owner/menu` & `POST /owner/menu/item`
+       - Protected (`@require_roles('owner')`). Lists and creates food items in `foods`.
+
+================================================================================
+4️⃣ PRECEDENCE 4: CUSTOMER CART & CHECKOUT FLOW (PHASE 1 & 2) — FOR TAMIM
+================================================================================
+*Enables the customer commerce lifecycle and writes actual orders into the database.
+
+Task 4.1: Cart Management Endpoints
+  - Files: `Backend/routes/cart.py`, `Backend/queries/cart.sql`
+  - Endpoints to implement:
+    1. `GET /cart`
+       - Protected (`@require_roles('user')`). Returns active cart items from `cart` & `cart_item`.
+    2. `POST /cart/items`
+       - Protected (`@require_roles('user')`). Adds or updates quantity in `cart_item`.
+    3. `DELETE /cart/items/<food_id>`
+       - Protected (`@require_roles('user')`). Removes an item from active cart.
+
+Task 4.2: Order Placement & Single Order Details (with Ownership Check)
+  - Files: `Backend/routes/orders.py`, `Backend/queries/orders.sql`
+  - Endpoints to implement:
+    1. `POST /orders/checkout`
+       - Protected (`@require_roles('user')`). Converts active cart into `orders` record,
+         inserts pending record in `payment`, sets cart status to 'ordered'.
+    2. `GET /orders/<order_id>`
+       - Protected (`@require_roles(['user', 'rider', 'owner', 'admin'])`).
+       - Object Ownership Check (Anti-IDOR):
+         Verify in SQL: `WHERE order_id = %s AND (username = current_user OR rider_username = current_user)`
+         Return 403 Forbidden or 404 Not Found if the order does not belong to the caller.
+    3. `POST /orders/<order_id>/cancel`
+       - Protected (`@require_roles('user')`). Cancels order if status is still 'pending'.
+
+================================================================================
+5️⃣ PRECEDENCE 5: RESTAURANT OWNER ORDER PROCESSING (PHASE 2) — FOR TAMIM
+================================================================================
+*Allows the restaurant kitchen to manage orders and mark them ready for delivery.
+
+Task 5.1: Owner Order Management Endpoints
+  - Files: `Backend/routes/owner.py`, `Backend/queries/owner.sql`
+  - Endpoints to implement:
+    1. `GET /owner/orders`
+       - Protected (`@require_roles('owner')`). Returns active/past orders for owner's restaurant.
+    2. `PATCH /owner/orders/<order_id>/status`
+       - Protected (`@require_roles('owner')`). Updates order status (`preparing` -> `ready_for_pickup`).
+
+================================================================================
+6️⃣ PRECEDENCE 6: RIDER DELIVERY FLOW (PHASE 2) — FOR TAMIM
+================================================================================
+*Allows riders to discover ready orders, accept deliveries, and mark them delivered.
+
+Task 6.1: Rider Delivery Endpoints
+  - Files: `Backend/routes/rider.py`, `Backend/queries/rider.sql`
+  - Endpoints to implement:
+    1. `GET /rider/available_deliveries`
+       - Protected (`@require_roles('rider')`). Lists orders where `status = 'ready_for_pickup'`.
+    2. `POST /rider/orders/<order_id>/accept`
+       - Protected (`@require_roles('rider')`). Assigns `rider_username = current_user` and
+         updates status to `delivering`.
+    3. `PATCH /rider/orders/<order_id>/status`
+       - Protected (`@require_roles('rider')`). Marks status as `delivered` and sets `final_timestamp`.
+    4. `GET /rider/deliveries/history`
+       - Protected (`@require_roles('rider')`). Fetches past completed trips for the rider.
+
+================================================================================
+7️⃣ PRECEDENCE 7: ADMIN MANAGEMENT FLOW (PHASE 2) — FOR TAMIM
+================================================================================
+*Allows platform administrators to manage ecosystem entities.
+
+Task 7.1: Admin Management Endpoints
+  - Files: `Backend/routes/admin.py`, `Backend/queries/admin.sql`
+  - Endpoints to implement:
+    1. `GET /admin/users`, `GET /admin/riders`, `GET /admin/owners`
+       - Protected (`@require_roles('admin')`). Returns list of accounts.
+    2. `PATCH /admin/users/<username>/status` & `PATCH /admin/riders/<username>/status`
+       - Protected (`@require_roles('admin')`). Bans/approves users or riders.
+
+================================================================================
+8️⃣ PHASE 3: FRONTEND-TO-BACKEND WIRING (FOR MRIDUL)
+================================================================================
+*NOTE: This phase is Frontend (Next.js / TypeScript / React) and should be executed
+by Mridul AFTER Tamim completes the Backend phases above.
+
+Tasks for Mridul:
+  - [ ] 1. Update `Frontend/app/checkout/page.tsx`:
+           Replace `localStorage` mock order generation with live call to `POST /orders/checkout`.
+  - [ ] 2. Update `Frontend/app/orders/[id]/page.tsx`:
+           Connect live tracking timeline to `GET /orders/<order_id>`.
+  - [ ] 3. Update `Frontend/app/restaurant/[id]/page.tsx`:
+           Fetch real foods from `GET /restaurants/<restaurant_id>/foods` instead of mock menu.
+  - [ ] 4. Update `Frontend/app/owner/dashboard/page.tsx`:
+           Wire restaurant creation and status updates to `GET /owner/restaurants` and `POST /owner/restaurants`.
+  - [ ] 5. Update `Frontend/app/rider/dashboard/page.tsx`:
+           Connect "Accept Order" and "Mark Delivered" buttons to live rider endpoints.
+  - [ ] 6. Update `Frontend/app/login/page.tsx`:
+           Remove `user_type` from `apiLogin()` payload to match the new server-resolved login endpoint.
+================================================================================
