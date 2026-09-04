@@ -109,6 +109,7 @@ export const riderNav: NavItem[] = [
 
 export const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", hint: "Platform overview" },
+  { href: "/admin/admins", label: "Admins", hint: "Admin approvals" },
   { href: "/admin/users", label: "Users", hint: "Customer accounts" },
   { href: "/admin/owners", label: "Restaurant Owners", hint: "Partner approvals" },
   { href: "/admin/restaurants", label: "Restaurants", hint: "Kitchen approvals" },

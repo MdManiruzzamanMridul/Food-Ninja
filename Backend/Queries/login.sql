@@ -1,5 +1,5 @@
 --name:admin_check
-SELECT username, password_hash
+SELECT username, password_hash, status
 FROM admin 
 WHERE username = %s OR email = %s OR phone = %s 
 
@@ -20,7 +20,7 @@ INSERT INTO users
 (%s, %s, %s, %s, %s)
 
 --name:rider_check
-SELECT username, password_hash
+SELECT username, password_hash, status
 FROM rider
 WHERE username = %s OR email = %s OR phone = %s
 

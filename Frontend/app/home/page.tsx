@@ -4,7 +4,7 @@ import { ActionButton } from "@/components/action-button";
 import { Badge, Panel, SectionHeading } from "@/components/ui";
 import { customerCategories, customerNav, customerRestaurants } from "@/lib/platform";
 import { getRestaurantCards } from "@/lib/restaurants";
-import { OwnerAccessGuard } from "@/components/owner-access-guard";
+import { CustomerAccessGuard } from "@/components/customer-access-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -22,19 +22,19 @@ export default async function CustomerHomePage() {
     : fallbackRestaurants;
 
   return (
-    <AppShell
-      role="Customer portal"
-      title="Find your next meal"
-      subtitle="Browse Dhaka restaurants, explore menus, and order with fast doorstep delivery."
-      nav={customerNav}
-      actions={
-        <Link href="/checkout" className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90">
-          Cart • Checkout
-        </Link>
-      }
-    >
-      <OwnerAccessGuard />
-      <div className="space-y-6">
+    <CustomerAccessGuard>
+      <AppShell
+        role="Customer portal"
+        title="Find your next meal"
+        subtitle="Browse Dhaka restaurants, explore menus, and order with fast doorstep delivery."
+        nav={customerNav}
+        actions={
+          <Link href="/checkout" className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90">
+            Cart • Checkout
+          </Link>
+        }
+      >
+        <div className="space-y-6">
         <Panel className="space-y-5 p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
@@ -82,7 +82,6 @@ export default async function CustomerHomePage() {
               <Panel key={restaurant.id} className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xl font-semibold text-slate-900">{restaurant.name}</p>
                     <p className="text-sm text-slate-500">{restaurant.cuisine}</p>
                   </div>
                   <Badge tone="success">{restaurant.rating === "New" ? "New" : `${restaurant.rating} ★`}</Badge>
@@ -110,7 +109,8 @@ export default async function CustomerHomePage() {
             ))}
           </div>
         </section>
-      </div>
-    </AppShell>
+        </div>
+      </AppShell>
+    </CustomerAccessGuard>
   );
 }

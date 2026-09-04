@@ -80,7 +80,7 @@ export type UpdateResponse = {
   message: string;
 };
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:5000";
 
 // Auth token storage helpers (localStorage)
 export function getAuthToken(): string | null {
@@ -113,13 +113,20 @@ export function clearAuthSession(): void {
 
 // Direct API calls to Flask Backend matching login.py exactly
 export async function apiLogin(payload: LoginPayload): Promise<LoginResponse> {
-  const res = await fetch(`${BACKEND_URL}/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND_URL}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(
+      "Backend server is offline or unreachable. Please ensure 'python app.py' is running in D:\\project\\Food-Ninja\\Backend."
+    );
+  }
 
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -158,13 +165,20 @@ export async function apiLogout(): Promise<{ success: boolean; message: string }
 }
 
 export async function apiRegister(payload: RegisterPayload): Promise<RegisterResponse> {
-  const res = await fetch(`${BACKEND_URL}/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BACKEND_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(
+      "Cannot connect to the Flask Backend. Please ensure 'python app.py' is running on http://127.0.0.1:5000 in your Backend terminal."
+    );
+  }
 
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -252,70 +266,6 @@ export async function apiChangePassword(oldPassword: string, newPassword: string
   return data;
 }
 
-export async function apiCheckUsername(username: string): Promise<{ available: boolean; message: string }> {
-  const clean = username.trim().toLowerCase();
-  if (!clean) return { available: false, message: "Username cannot be empty" };
-  try {
-    const res = await fetch(`${BACKEND_URL}/users/check_username?username=${encodeURIComponent(clean)}`);
-    const data = await res.json();
-    return data;
-  } catch {
-    return { available: true, message: "Offline check" };
-  }
-}
-
-export async function apiUpdateUsername(newUsername: string, password?: string): Promise<UpdateResponse> {
-  const token = getAuthToken();
-  const current = getAuthUser();
-  const cleanUsername = newUsername.trim().toLowerCase();
-
-  if (!cleanUsername) {
-    throw new Error("Username cannot be empty");
-  }
-
-  if (token) {
-    const res = await fetch(`${BACKEND_URL}/users/me/username`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        new_username: cleanUsername,
-        password: password || "",
-      }),
-    });
-
-    const data = await res.json();
-    if (res.ok && data.success) {
-      if (data.token) {
-        setAuthSession(data.token, {
-          username: cleanUsername,
-          user_type: current?.user_type || "user",
-          email: current?.email,
-        });
-      } else if (current) {
-        setAuthSession(token, {
-          ...current,
-          username: cleanUsername,
-        });
-      }
-      return data;
-    } else {
-      throw new Error(data.message || `Failed to update username (${res.status})`);
-    }
-  }
-
-  if (current) {
-    setAuthSession(token || "client_token", {
-      ...current,
-      username: cleanUsername,
-    });
-  }
-
-  return { success: true, message: "Username updated successfully!" };
-}
-
 export async function apiGetPendingOrders() {
   const token = getAuthToken();
   if (!token) {
@@ -400,6 +350,35 @@ export async function apiUpdateLocation(payload: { latitude: number; longitude: 
     throw new Error(data.message || "Failed to update location");
   }
 
+  return data;
+}
+
+export async function apiGetLocation(): Promise<{
+  success: boolean;
+  has_location: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required. Please log in.");
+
+  const res = await fetch(`${BACKEND_URL}/users/me/location`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch location");
+  return data;
+}
+
+export async function apiGetRiderStatus(): Promise<{ success: boolean; status: string; has_location: boolean }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required");
+
+  const res = await fetch(`${BACKEND_URL}/rider/status`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch rider status");
   return data;
 }
 
@@ -523,6 +502,51 @@ export async function apiGetAdminPendingOwners(): Promise<any[]> {
   }
 }
 
+export async function apiGetAdminStatus(): Promise<{ success: boolean; status: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Authentication required");
+  const res = await fetch(`${BACKEND_URL}/admin/status`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch admin status");
+  return data;
+}
+
+export type AdminApprovalRow = {
+  username: string;
+  email: string;
+  phone: string;
+  status: string;
+};
+
+export async function apiGetPendingAdmins(): Promise<AdminApprovalRow[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+  const res = await fetch(`${BACKEND_URL}/admin/pending_admins`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch admins");
+  return Array.isArray(data.admins) ? data.admins : [];
+}
+
+export async function apiVerifyAdmin(username: string, status: "approved" | "banned" | "pending"): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Admin authorization required");
+  const res = await fetch(`${BACKEND_URL}/admin/verify_admin`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username, status }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to verify admin");
+  return data;
+}
+
 export async function apiVerifyOwner(ownerId: string, status: "approved" | "rejected"): Promise<{ success: boolean; message: string }> {
   const token = getAuthToken();
   if (!token) throw new Error("Admin authorization required");
@@ -558,7 +582,7 @@ export async function apiGetAdminPendingRestaurants(): Promise<any[]> {
   }
 }
 
-export async function apiVerifyRestaurant(restaurantId: string, status: "open" | "rejected" | "closed"): Promise<{ success: boolean; message: string }> {
+export async function apiVerifyRestaurant(restaurantId: string, status: "closed" | "banned" | "pending"): Promise<{ success: boolean; message: string }> {
   const token = getAuthToken();
   if (!token) throw new Error("Admin authorization required");
 
@@ -575,6 +599,44 @@ export async function apiVerifyRestaurant(restaurantId: string, status: "open" |
   if (!res.ok || !data.success) {
     throw new Error(data.message || "Failed to verify restaurant");
   }
+  return data;
+}
+
+export type AdminRiderRow = {
+  username: string;
+  name: string;
+  email: string;
+  phone: string;
+  vehicle: string;
+  status: string;
+};
+
+export async function apiGetAdminPendingRiders(): Promise<AdminRiderRow[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  const res = await fetch(`${BACKEND_URL}/admin/pending_riders`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch riders");
+  return Array.isArray(data.riders) ? data.riders : [];
+}
+
+export async function apiVerifyRider(riderUsername: string, status: "offline" | "banned" | "pending"): Promise<{ success: boolean; message: string }> {
+  const token = getAuthToken();
+  if (!token) throw new Error("Admin authorization required");
+
+  const res = await fetch(`${BACKEND_URL}/admin/verify_rider`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ rider_username: riderUsername, status }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || "Failed to verify rider");
   return data;
 }
 

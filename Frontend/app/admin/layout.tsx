@@ -2,30 +2,30 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthToken, getAuthUser, clearAuthSession } from "@/lib/backend";
+import { getAuthToken, getAuthUser, apiGetAdminStatus } from "@/lib/backend";
 import { useToast } from "@/components/toast-provider";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [adminName, setAdminName] = useState<string>("");
+  const [state, setState] = useState<"loading" | "approved" | "pending" | "blocked">("loading");
 
   useEffect(() => {
     const token = getAuthToken();
     const user = getAuthUser();
 
     if (!token || !user || user.user_type !== "admin") {
-      setIsAuthenticated(false);
+      setState("blocked");
       toast("Admin authentication required. Please sign in with your admin password.", "warning");
       router.replace("/login");
     } else {
-      setIsAuthenticated(true);
-      setAdminName(user.username || "Admin");
+      apiGetAdminStatus()
+        .then((data) => setState(data.status === "approved" ? "approved" : "pending"))
+        .catch(() => setState("pending"));
     }
   }, [router, toast]);
 
-  if (isAuthenticated === null) {
+  if (state === "loading") {
     return (
       <div className="min-h-screen bg-[#f6f1e8] flex items-center justify-center p-4">
         <div className="rounded-[28px] border border-black/5 bg-white p-8 shadow-sm text-center max-w-sm w-full space-y-4">
@@ -44,8 +44,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
+  if (state === "blocked") {
     return null;
+  }
+
+  if (state === "pending") {
+    return (
+      <div className="min-h-screen bg-[#f6f1e8] flex items-center justify-center p-4">
+        <div className="max-w-xl space-y-4 rounded-[28px] border border-amber-200 bg-white p-10 text-center shadow-sm">
+          <div className="text-4xl">⏳</div>
+          <h1 className="text-2xl font-bold text-slate-900">Admin approval pending</h1>
+          <p className="text-sm text-slate-600">An approved administrator must approve your account before admin facilities become available.</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -87,11 +87,11 @@ export default function AdminOwnersPage() {
           ) : owners.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
               <p className="text-sm font-bold text-slate-900">No restaurant owners registered yet</p>
-              <p className="text-xs text-slate-500 mt-1">When partners register with role 'Restaurant Owner', their credentials will appear here.</p>
+              <p className="text-xs text-slate-500 mt-1">When partners register with role &apos;Restaurant Owner&apos;, their credentials will appear here.</p>
             </div>
           ) : (
             <TableFrame>
-              <table className="w-full text-left text-xs">
+              <table className="min-w-max w-full text-left text-xs">
                 <thead className="border-b border-black/5 bg-slate-50 text-slate-700">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Owner Handle</th>

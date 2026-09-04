@@ -14,8 +14,8 @@ def get_owner_status():
     if payload is None or payload.get("user_type") != "owner":
         return jsonify({
             "success": False,
-            "message": "Unauthorized"
-        }), 401
+            "message": "Owner authorization required"
+        }), 403
 
     username = payload.get("username")
 
@@ -55,8 +55,8 @@ def owner_restaurants():
     if payload is None or payload.get("user_type") != "owner":
         return jsonify({
             "success": False,
-            "message": "Unauthorized"
-        }), 401
+            "message": "Owner authorization required"
+        }), 403
 
     username = payload.get("username")
 
@@ -150,8 +150,8 @@ def delete_owner_restaurant(restaurant_id):
     if payload is None:
         return jsonify({
             "success": False,
-            "message": "Unauthorized"
-        }), 401
+            "message": "Owner or admin authorization required"
+        }), 403
 
     user_type = payload.get("user_type")
     username = payload.get("username")
@@ -160,11 +160,21 @@ def delete_owner_restaurant(restaurant_id):
         with get_connection() as conn:
             with conn.cursor() as cur:
                 if user_type == "admin":
+                    if not auth.is_approved_admin(payload):
+                        return jsonify({
+                            "success": False,
+                            "message": "Approved admin authorization required"
+                        }), 403
                     query = load_query("owner.sql", "delete_restaurant_by_admin")
                     cur.execute(query, (restaurant_id,))
-                else:
+                elif user_type == "owner":
                     query = load_query("owner.sql", "delete_restaurant_by_owner")
                     cur.execute(query, (restaurant_id, username))
+                else:
+                    return jsonify({
+                        "success": False,
+                        "message": "Owner or admin authorization required"
+                    }), 403
 
                 conn.commit()
                 return jsonify({

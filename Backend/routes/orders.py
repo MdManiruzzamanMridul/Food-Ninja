@@ -17,6 +17,12 @@ def get_orders():
 
     username = payload.get("username")
 
+    if payload.get("user_type") != "user":
+        return jsonify({
+            "success": False,
+            "message": "Customer authorization required"
+        }), 403
+
     try:
         with get_connection() as conn:     
             with conn.cursor() as cur: 

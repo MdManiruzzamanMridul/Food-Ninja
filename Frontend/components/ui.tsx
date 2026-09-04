@@ -98,7 +98,7 @@ export function TableFrame({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-3xl border border-black/5 bg-panel/80", className)}>
+    <div className={cn("overflow-x-auto overflow-y-hidden rounded-3xl border border-black/5 bg-panel/80", className)}>
       {children}
     </div>
   );

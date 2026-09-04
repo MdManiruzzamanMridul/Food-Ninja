@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
         ) : users.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center space-y-1">
             <p className="text-sm font-bold text-slate-800">No customer accounts found in database</p>
-            <p className="text-xs text-slate-500">When users sign up with role 'Customer', their records will populate here directly from the database.</p>
+            <p className="text-xs text-slate-500">When users sign up with role &apos;Customer&apos;, their records will populate here directly from the database.</p>
           </div>
         ) : (
           <TableFrame>

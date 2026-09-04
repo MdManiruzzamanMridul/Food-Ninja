@@ -39,11 +39,11 @@ export default function AdminRestaurantsPage() {
     }
   }
 
-  async function handleVerify(restaurantId: string, status: "open" | "rejected" | "closed") {
+  async function handleVerify(restaurantId: string, status: "closed") {
     setActionLoading(restaurantId);
     try {
       await apiVerifyRestaurant(restaurantId, status);
-      toast(`Restaurant status updated to ${status}! It is now ${status === 'open' ? 'live on customer feed' : 'offline'}.`, "success");
+      toast(`Restaurant status updated to ${status}.`, "success");
       await loadRestaurants();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Verification action failed", "danger");
@@ -121,19 +121,11 @@ export default function AdminRestaurantsPage() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => handleVerify(rest.restaurant_id, "open")}
+                              onClick={() => handleVerify(rest.restaurant_id, "closed")}
                               disabled={actionLoading === rest.restaurant_id}
                               className="rounded-full bg-emerald-600 px-3.5 py-1 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition disabled:opacity-50"
                             >
-                              Approve & Publish
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleVerify(rest.restaurant_id, "rejected")}
-                              disabled={actionLoading === rest.restaurant_id}
-                              className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                            >
-                              Reject
+                              Approve & Close
                             </button>
                           </div>
                         ) : rest.status === "open" ? (
@@ -148,11 +140,11 @@ export default function AdminRestaurantsPage() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleVerify(rest.restaurant_id, "open")}
+                            onClick={() => handleVerify(rest.restaurant_id, "closed")}
                             disabled={actionLoading === rest.restaurant_id}
                             className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50"
                           >
-                            Re-Approve
+                            Approve
                           </button>
                         )}
                       </td>

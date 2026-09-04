@@ -18,6 +18,12 @@ def get_nearby_restaurants():
     user_type = payload.get("user_type")
     username = payload.get("username")
 
+    if user_type != "user":
+        return jsonify({
+            "success": False,
+            "message": "Customer authorization required"
+        }), 403
+
     food_category = request.args.get("food_category")
 
     if food_category is not None:

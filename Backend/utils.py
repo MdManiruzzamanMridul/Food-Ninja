@@ -65,43 +65,6 @@ def normalize_username(username):
     return username
 
 
-def is_username_taken(username):
-    if not isinstance(username, str) or not username.strip():
-        return False
-    clean_username = username.strip().lower()
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            query = load_query("check_exist.sql", "check_username_exists")
-            cur.execute(query, (clean_username, clean_username, clean_username, clean_username))
-            return cur.fetchone() is not None
-
-
-def updateUsername(user_type, old_username, new_username):
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            try:
-                if user_type == "user":
-                    query = load_query("update_info.sql", "update_user_username")
-                elif user_type == "rider":
-                    query = load_query("update_info.sql", "update_rider_username")
-                elif user_type == "admin":
-                    query = load_query("update_info.sql", "update_admin_username")
-                elif user_type == "owner":
-                    query = load_query("update_info.sql", "update_owner_username")
-                else:
-                    return "invalid_user_type"
-
-                cur.execute(query, (new_username, old_username))
-                conn.commit()
-                return "success"
-
-            except psycopg.errors.UniqueViolation:
-                return "username_exists"
-
-            except psycopg.Error:
-                return "database_error"
-
-
 import auth
 
 

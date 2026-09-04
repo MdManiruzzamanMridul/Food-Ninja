@@ -338,7 +338,7 @@ export default function CustomerProfilePage() {
                 <div>
                   <p className="text-xs font-bold text-slate-900">Pin New Delivery Location on OpenStreetMap</p>
                   <p className="text-[11px] text-slate-500">
-                    Click anywhere on the map, drag the pin, or click "My Live GPS" to set your coordinates.
+                    Click anywhere on the map, drag the pin, or click &quot;My Live GPS&quot; to set your coordinates.
                   </p>
                 </div>
 
