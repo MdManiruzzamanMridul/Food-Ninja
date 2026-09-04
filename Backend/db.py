@@ -22,9 +22,9 @@ def get_connection():
 def load_query(filename, query_name):
     # Resolve directory relative to db.py
     base_dir = Path(__file__).resolve().parent
-    queries_path = base_dir / "Queries" / filename
+    queries_path = base_dir / "queries" / filename
     if not queries_path.exists():
-        queries_path = base_dir / "queries" / filename
+        queries_path = base_dir / "Queries" / filename
 
     with open(queries_path, "r", encoding="utf-8") as file:
         content = file.read()

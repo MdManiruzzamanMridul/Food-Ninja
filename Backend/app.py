@@ -12,6 +12,8 @@ from routes.update_username import update_username_bp
 from routes.change_password import change_password_bp
 from routes.nearby_restaurants import nearby_restaurants_bp
 from routes.orders import orders_bp
+from routes.owner import owner_bp
+from routes.admin import admin_bp
 
 
 load_dotenv()
@@ -31,6 +33,8 @@ app.register_blueprint(update_username_bp)
 app.register_blueprint(change_password_bp)
 app.register_blueprint(nearby_restaurants_bp)
 app.register_blueprint(orders_bp)
+app.register_blueprint(owner_bp)
+app.register_blueprint(admin_bp)
 
 
 @app.route("/", methods=["GET"])

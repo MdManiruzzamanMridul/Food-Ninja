@@ -102,6 +102,9 @@ def updateUsername(user_type, old_username, new_username):
                 return "database_error"
 
 
+import auth
+
+
 def verifyUserPassword(user_type, username, password):
     if not isinstance(password, str) or not password:
         return False
