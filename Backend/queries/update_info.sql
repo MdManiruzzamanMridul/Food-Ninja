@@ -87,3 +87,24 @@ WHERE owner_id = %s;
 UPDATE restaurant_owner
 SET password_hash = %s
 WHERE owner_id = %s;
+
+--name:update_user_username
+UPDATE users
+SET username = %s
+WHERE username = %s;
+
+--name:update_rider_username
+UPDATE rider
+SET username = %s
+WHERE username = %s;
+
+--name:update_admin_username
+UPDATE admin
+SET username = %s
+WHERE username = %s;
+
+--name:update_owner_username
+UPDATE restaurant_owner
+SET owner_id = %s
+WHERE owner_id = %s;
+

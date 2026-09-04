@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/components/ui";
-import { apiUpdateLocation, apiUpdateUsername, setOnboarded } from "@/lib/backend";
+import { apiUpdateLocation, apiUpdateUsername, apiCheckUsername, setOnboarded } from "@/lib/backend";
 import { OSMLocationPicker } from "./osm-location-picker";
 
 type AvatarOption = {
@@ -60,6 +60,65 @@ export function OnboardingModal({
   const [legalName, setLegalName] = useState(username ? username.charAt(0).toUpperCase() + username.slice(1) : "");
   const [nidNumber, setNidNumber] = useState("");
   const [phone, setPhone] = useState(initialPhone || "");
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+
+  // Real-time as-you-type username check state
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameStatusMsg, setUsernameStatusMsg] = useState("");
+
+  useEffect(() => {
+    const clean = customUsername.trim().toLowerCase();
+    if (!clean) {
+      setUsernameStatus("idle");
+      setUsernameStatusMsg("");
+      return;
+    }
+
+    if (!/^[a-z]/.test(clean)) {
+      setUsernameStatus("invalid");
+      setUsernameStatusMsg("Must start with a letter (a-z)");
+      return;
+    }
+
+    if (clean.length < 3) {
+      setUsernameStatus("invalid");
+      setUsernameStatusMsg("Must be at least 3 characters");
+      return;
+    }
+
+    if (!/^[a-z][a-z0-9_]{2,29}$/.test(clean)) {
+      setUsernameStatus("invalid");
+      setUsernameStatusMsg("Only letters, numbers, and underscores allowed (max 30 chars)");
+      return;
+    }
+
+    if (clean === username.toLowerCase()) {
+      setUsernameStatus("available");
+      setUsernameStatusMsg("Current handle assigned to your account");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameStatusMsg("Checking database availability...");
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiCheckUsername(clean);
+        if (res.available) {
+          setUsernameStatus("available");
+          setUsernameStatusMsg(`@${clean} is available!`);
+        } else {
+          setUsernameStatus("taken");
+          setUsernameStatusMsg(`@${clean} is already taken. Please choose another.`);
+        }
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [customUsername, username]);
 
   // Step 3: Location / Map Coordinates
   const [latitude, setLatitude] = useState(23.7925);
@@ -83,14 +142,58 @@ export function OnboardingModal({
     );
   }
 
+  async function handleStep2Next() {
+    setUsernameError("");
+    const targetUser = customUsername.trim().toLowerCase();
+    if (!targetUser) {
+      setUsernameError("Please enter a username for your account.");
+      return;
+    }
+    if (usernameStatus === "invalid") {
+      setUsernameError(usernameStatusMsg || "Please enter a valid username.");
+      return;
+    }
+    if (usernameStatus === "taken") {
+      setUsernameError(`Username '@${targetUser}' is already taken. Please choose another.`);
+      return;
+    }
+    if (usernameStatus === "checking") {
+      return;
+    }
+
+    if (targetUser !== username.toLowerCase()) {
+      setUsernameChecking(true);
+      try {
+        const check = await apiCheckUsername(targetUser);
+        if (!check.available) {
+          setUsernameStatus("taken");
+          setUsernameStatusMsg(`@${targetUser} is already taken.`);
+          setUsernameError(check.message || `Username '@${targetUser}' is already taken. Please choose another.`);
+          setUsernameChecking(false);
+          return;
+        }
+      } catch {
+        // Continue if offline check
+      } finally {
+        setUsernameChecking(false);
+      }
+    }
+
+    setCurrentStep(3);
+  }
+
   async function handleFinalSubmit() {
     setIsSubmitting(true);
+    setUsernameError("");
     const finalUser = customUsername.trim().toLowerCase() || username;
 
     try {
-      // 1. If username was chosen, update backend & session
-      if (finalUser) {
-        await apiUpdateUsername(finalUser);
+      // 1. If username was chosen and differs from temporary username, update backend & session
+      if (finalUser && finalUser !== username.toLowerCase()) {
+        const updateRes = await apiUpdateUsername(finalUser);
+        if (!updateRes.success) {
+          throw new Error(updateRes.message || "Username is already taken");
+        }
       }
 
       // 2. Send location update to backend PostGIS endpoint
@@ -112,7 +215,21 @@ export function OnboardingModal({
 
       // 4. Navigate to target dashboard
       onComplete(targetRedirect);
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to complete setup";
+      if (
+        msg.toLowerCase().includes("username") ||
+        msg.toLowerCase().includes("taken") ||
+        msg.toLowerCase().includes("already") ||
+        msg.toLowerCase().includes("exists")
+      ) {
+        setCurrentStep(2);
+        setUsernameError(msg);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Offline fallback for location if not a username conflict
       setOnboarded(finalUser, {
         avatar: selectedAvatar,
         cuisines: selectedCuisines,
@@ -289,12 +406,73 @@ export function OnboardingModal({
                     <span className="absolute left-4 font-semibold text-slate-400">@</span>
                     <input
                       value={customUsername}
-                      onChange={(e) => setCustomUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase())}
+                      onChange={(e) => {
+                        setUsernameError("");
+                        setCustomUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase());
+                      }}
                       placeholder="e.g. foodlover99"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 pl-8 pr-4 py-3 text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                      className={cn(
+                        "w-full rounded-2xl border bg-slate-50 pl-8 pr-11 py-3 text-sm font-semibold text-slate-900 outline-none transition font-mono",
+                        usernameStatus === "available"
+                          ? "border-emerald-500 bg-emerald-50/20 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
+                          : usernameStatus === "taken" || usernameStatus === "invalid"
+                          ? "border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20"
+                          : "border-slate-200 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                      )}
                       required
                     />
+                    <div className="absolute right-3.5 flex items-center">
+                      {usernameStatus === "checking" && (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" />
+                      )}
+                      {usernameStatus === "available" && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
+                          ✓
+                        </span>
+                      )}
+                      {usernameStatus === "taken" && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-600">
+                          ✕
+                        </span>
+                      )}
+                      {usernameStatus === "invalid" && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                          !
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* As-you-type real-time feedback */}
+                  {usernameStatus !== "idle" && (
+                    <p
+                      className={cn(
+                        "text-xs font-medium flex items-center gap-1.5 transition-all animate-fadeIn",
+                        usernameStatus === "available" && "text-emerald-600",
+                        usernameStatus === "taken" && "text-rose-600",
+                        usernameStatus === "invalid" && "text-amber-700",
+                        usernameStatus === "checking" && "text-slate-500 font-normal"
+                      )}
+                    >
+                      <span>
+                        {usernameStatus === "available"
+                          ? "✓"
+                          : usernameStatus === "taken"
+                          ? "✕"
+                          : usernameStatus === "invalid"
+                          ? "⚠️"
+                          : "⏳"}
+                      </span>
+                      <span>{usernameStatusMsg}</span>
+                    </p>
+                  )}
+
+                  {usernameError && usernameStatus === "idle" && (
+                    <p className="text-xs font-semibold text-rose-600 animate-fadeIn">
+                      ⚠️ {usernameError}
+                    </p>
+                  )}
+
                   <p className="text-[11px] text-slate-500">
                     Your handle is used for orders, delivery tracking receipts, and fast login.
                   </p>
@@ -358,10 +536,11 @@ export function OnboardingModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
-                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-md shadow-amber-500/25"
+                  onClick={handleStep2Next}
+                  disabled={usernameChecking}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-500 px-6 py-2.5 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-md shadow-amber-500/25 disabled:opacity-60 disabled:cursor-wait"
                 >
-                  <span>Continue to Realtime Map</span>
+                  <span>{usernameChecking ? "Checking handle..." : "Continue to Realtime Map"}</span>
                   <span>→</span>
                 </button>
               </div>

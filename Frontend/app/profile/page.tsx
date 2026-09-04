@@ -12,7 +12,6 @@ import {
   apiGetPendingOrders,
   clearAuthSession,
   apiChangePassword,
-  apiUpdateUsername,
   apiUpdateEmail,
   apiUpdatePhone,
   apiUpdateLocation,
@@ -44,18 +43,13 @@ export default function CustomerProfilePage() {
   const [tempArea, setTempArea] = useState("Gulshan 2, Dhaka");
 
   // Settings active tab
-  const [activeTab, setActiveTab] = useState<"security" | "username" | "email" | "phone">("security");
+  const [activeTab, setActiveTab] = useState<"security" | "email" | "phone">("security");
 
   // Change Password State
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
-
-  // Update Username State
-  const [newUsername, setNewUsername] = useState("");
-  const [usernamePassword, setUsernamePassword] = useState("");
-  const [usernameLoading, setUsernameLoading] = useState(false);
 
   // Update Email State
   const [newEmail, setNewEmail] = useState("");
@@ -72,8 +66,6 @@ export default function CustomerProfilePage() {
     setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    setNewUsername("");
-    setUsernamePassword("");
     setNewEmail("");
     setEmailPassword("");
     setNewPhone("");
@@ -142,28 +134,6 @@ export default function CustomerProfilePage() {
       toast(err instanceof Error ? err.message : "Failed to change password", "danger");
     } finally {
       setPasswordLoading(false);
-    }
-  }
-
-  async function handleUpdateUsername(e: React.FormEvent) {
-    e.preventDefault();
-
-    if (!newUsername.trim()) {
-      toast("Please enter your desired new username", "warning");
-      return;
-    }
-
-    setUsernameLoading(true);
-    try {
-      const res = await apiUpdateUsername(newUsername.trim(), usernamePassword);
-      toast(res.message || "Username updated successfully!", "success");
-      setUser((prev) => (prev ? { ...prev, username: newUsername.trim().toLowerCase() } : null));
-      setNewUsername("");
-      setUsernamePassword("");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to update username", "danger");
-    } finally {
-      setUsernameLoading(false);
     }
   }
 
@@ -323,8 +293,13 @@ export default function CustomerProfilePage() {
             <SectionHeading eyebrow="Account summary" title="Session information" />
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <span className="text-xs text-slate-400 block">Current Username:</span>
-                <span className="text-sm font-semibold text-white">{user?.username || "Not logged in"}</span>
+                <span className="text-xs text-slate-400 block">Permanent Handle (Primary Key):</span>
+                <span className="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                  @{user?.username || "Not logged in"}
+                  <span className="rounded-md bg-amber-500/20 px-2 py-0.5 text-[10px] font-sans font-medium text-amber-300 border border-amber-500/30">
+                    Permanent
+                  </span>
+                </span>
               </div>
               <div>
                 <span className="text-xs text-slate-400 block">Account Role:</span>
@@ -417,18 +392,6 @@ export default function CustomerProfilePage() {
                   )}
                 >
                   Password
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("username")}
-                  className={cn(
-                    "rounded-xl px-3 py-1 text-xs font-medium transition",
-                    activeTab === "username"
-                      ? "bg-orange-500 text-white shadow-sm"
-                      : "text-slate-300 hover:text-white"
-                  )}
-                >
-                  Username
                 </button>
                 <button
                   type="button"
@@ -528,70 +491,7 @@ export default function CustomerProfilePage() {
               </form>
             )}
 
-            {/* TAB 2: Update Username */}
-            {activeTab === "username" && (
-              <form onSubmit={handleUpdateUsername} autoComplete="off" className="space-y-4">
-                {/* Off-screen trap elements to absorb browser password manager autofill */}
-                <div style={{ opacity: 0, position: "absolute", top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: "hidden" }} aria-hidden="true">
-                  <input type="text" name="chrome_user_trap_u" tabIndex={-1} defaultValue="" />
-                  <input type="password" name="chrome_user_trap_p" tabIndex={-1} defaultValue="" />
-                </div>
-
-                <p className="text-xs text-slate-400">
-                  Choose a new unique handle for your account. You can use it to sign in across Food Ninja.
-                </p>
-
-                <label className="space-y-1.5 text-sm text-slate-300 block">
-                  <span>Current Username</span>
-                  <input
-                    disabled
-                    value={user?.username || ""}
-                    className="w-full rounded-2xl border border-white/5 bg-white/5 px-4 py-2.5 text-slate-400 outline-none cursor-not-allowed text-xs font-mono"
-                  />
-                </label>
-
-                <label className="space-y-1.5 text-sm text-slate-300 block">
-                  <span>New Desired Username *</span>
-                  <input
-                    type="text"
-                    name="fn_upd_username_val"
-                    autoComplete="off"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    value={newUsername}
-                    onChange={(e) => setNewUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase())}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500 font-semibold"
-                    placeholder="e.g. foodlover99"
-                    required
-                  />
-                </label>
-
-                <label className="space-y-1.5 text-sm text-slate-300 block">
-                  <span>Current Password for Verification</span>
-                  <input
-                    type="password"
-                    name="fn_upd_user_pwd"
-                    autoComplete="new-password"
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    value={usernamePassword}
-                    onChange={(e) => setUsernamePassword(e.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none placeholder:text-slate-500"
-                    placeholder="••••••••"
-                  />
-                </label>
-
-                <button
-                  type="submit"
-                  disabled={usernameLoading}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-amber-600 disabled:cursor-wait disabled:opacity-70"
-                >
-                  {usernameLoading ? "Updating..." : "Update Username"}
-                </button>
-              </form>
-            )}
-
-            {/* TAB 3: Update Email */}
+            {/* TAB 2: Update Email */}
             {activeTab === "email" && (
               <form onSubmit={handleUpdateEmail} autoComplete="off" className="space-y-4">
                 {/* Off-screen trap elements to absorb browser password manager autofill */}

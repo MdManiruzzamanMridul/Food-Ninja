@@ -131,6 +131,13 @@ def register():
                 "message": "Invalid name"
             }), 400
 
+    # Ensure username is globally unique across all accounts as a primary key
+    if utils.is_username_taken(username):
+        return jsonify({
+            "success": False,
+            "message": f"Username '{username}' is already taken. Please choose another."
+        }), 409
+
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:

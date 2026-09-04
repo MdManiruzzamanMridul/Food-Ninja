@@ -252,6 +252,18 @@ export async function apiChangePassword(oldPassword: string, newPassword: string
   return data;
 }
 
+export async function apiCheckUsername(username: string): Promise<{ available: boolean; message: string }> {
+  const clean = username.trim().toLowerCase();
+  if (!clean) return { available: false, message: "Username cannot be empty" };
+  try {
+    const res = await fetch(`${BACKEND_URL}/users/check_username?username=${encodeURIComponent(clean)}`);
+    const data = await res.json();
+    return data;
+  } catch {
+    return { available: true, message: "Offline check" };
+  }
+}
+
 export async function apiUpdateUsername(newUsername: string, password?: string): Promise<UpdateResponse> {
   const token = getAuthToken();
   const current = getAuthUser();
@@ -262,42 +274,35 @@ export async function apiUpdateUsername(newUsername: string, password?: string):
   }
 
   if (token) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/users/me/username`, {
-        method: "PATCH",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          new_username: cleanUsername,
-          password: password || "",
-        }),
-      });
+    const res = await fetch(`${BACKEND_URL}/users/me/username`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        new_username: cleanUsername,
+        password: password || "",
+      }),
+    });
 
-      const data = await res.json();
-      if (res.ok && data.success) {
-        if (data.token) {
-          setAuthSession(data.token, {
-            username: cleanUsername,
-            user_type: current?.user_type || "user",
-            email: current?.email,
-          });
-        } else if (current) {
-          setAuthSession(token, {
-            ...current,
-            username: cleanUsername,
-          });
-        }
-        return data;
-      } else if (!res.ok && data.message && res.status !== 404) {
-        throw new Error(data.message);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (data.token) {
+        setAuthSession(data.token, {
+          username: cleanUsername,
+          user_type: current?.user_type || "user",
+          email: current?.email,
+        });
+      } else if (current) {
+        setAuthSession(token, {
+          ...current,
+          username: cleanUsername,
+        });
       }
-    } catch (err) {
-      if (err instanceof Error && !err.message.includes("Failed to fetch") && !err.message.includes("404")) {
-        throw err;
-      }
-      // If 404 or offline, gracefully update client session
+      return data;
+    } else {
+      throw new Error(data.message || `Failed to update username (${res.status})`);
     }
   }
 
