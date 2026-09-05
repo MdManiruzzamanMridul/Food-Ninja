@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuthChrome } from "@/components/auth-chrome";
 import { Badge, cn } from "@/components/ui";
 import { useToast } from "@/components/toast-provider";
-import { apiLogin, isOnboarded, setOnboarded, setAuthSession } from "@/lib/backend";
+import { apiGetLocation, apiLogin, setOnboarded, setAuthSession } from "@/lib/backend";
 import { OnboardingModal } from "@/components/onboarding-modal";
 
 const roles = [
@@ -89,10 +89,15 @@ function LoginContent() {
       const matchedRole = roles.find((r) => r.id === selectedRole);
       const targetPath = matchedRole ? matchedRole.redirect : "/home";
 
-      // Admin accounts do not need the onboarding popup (persona, fav food, or map calibration)
-      const hasOnboarded = selectedRole === "admin" || isOnboarded(activeUsername);
+      // Only customers and riders use location setup, and only while their database location is null.
+      const needsLocationSetup = selectedRole === "user" || selectedRole === "rider";
+      let hasLocation = true;
+      if (needsLocationSetup) {
+        const location = await apiGetLocation();
+        hasLocation = location.has_location;
+      }
 
-      if (!hasOnboarded) {
+      if (!hasLocation) {
         setOnboardingState({
           open: true,
           username: activeUsername,
@@ -233,7 +238,7 @@ function LoginContent() {
             </button>
 
             <div className="pt-2 text-center text-xs text-slate-500">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href={`/register?role=${selectedRole}`} className="font-semibold text-amber-700 hover:underline">
                 Create an account
               </Link>

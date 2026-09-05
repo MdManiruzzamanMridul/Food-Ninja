@@ -91,6 +91,20 @@ def get_user_info():
     return payload
 
 
+def is_approved_admin(payload):
+    if not payload or payload.get("user_type") != "admin":
+        return False
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(load_query("admin.sql", "get_admin_status"), (payload.get("username"),))
+                row = cur.fetchone()
+                return bool(row and row.get("status") == "approved")
+    except Exception:
+        return False
+
+
 def revoke_token(token):
     try:
         payload = jwt.decode(

@@ -53,11 +53,11 @@ export default function AdminDashboardPage() {
     }
   }
 
-  async function handleVerifyRestaurant(restaurantId: string, status: "open" | "rejected") {
+  async function handleVerifyRestaurant(restaurantId: string, status: "closed") {
     setActionLoading(`rest-${restaurantId}`);
     try {
       await apiVerifyRestaurant(restaurantId, status);
-      toast(`Restaurant status updated to ${status}! It is now ${status === 'open' ? 'live on the customer feed' : 'rejected'}.`, "success");
+      toast(`Restaurant status updated to ${status}.`, "success");
       await loadData();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Failed to verify restaurant", "danger");
@@ -249,19 +249,11 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => handleVerifyRestaurant(rest.restaurant_id, "open")}
+                            onClick={() => handleVerifyRestaurant(rest.restaurant_id, "closed")}
                             disabled={actionLoading === `rest-${rest.restaurant_id}`}
                             className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition disabled:opacity-50"
                           >
-                            ✓ Approve & Publish
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleVerifyRestaurant(rest.restaurant_id, "rejected")}
-                            disabled={actionLoading === `rest-${rest.restaurant_id}`}
-                            className="rounded-full border border-rose-300 bg-rose-50 px-3.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
-                          >
-                            ✕ Reject
+                            ✓ Approve & Close
                           </button>
                         </div>
                       </td>

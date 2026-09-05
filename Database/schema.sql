@@ -46,7 +46,7 @@ CREATE TABLE rider (
 	location geography(Point, 4326),
 	balance numeric(10, 2) DEFAULT 0.00 NOT NULL,
 	pfp bytea,
-	status varchar(20) DEFAULT 'online' CHECK (status IN ('online', 'offline', 'banned', 'delivering')),
+	status varchar(20) DEFAULT 'pending' CHECK (status IN ('pending', 'online', 'offline', 'banned', 'delivering')),
 	reg_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
